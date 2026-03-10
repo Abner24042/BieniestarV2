@@ -8,7 +8,10 @@ document.addEventListener('DOMContentLoaded', function() {
     initSearch();
 });
 
-let exercisesData = [];
+const EXERCISE_PAGE_SIZE = 6;
+let exercisesData     = [];
+let filteredExercises = [];
+let exerciseVisible   = EXERCISE_PAGE_SIZE;
 
 async function loadEjercicios() {
     try {
@@ -17,70 +20,108 @@ async function loadEjercicios() {
 
         if (data.success) {
             exercisesData = data.ejercicios || [];
-            renderEjercicios(exercisesData);
+            applyFilters();
         } else {
-            document.getElementById('exercisesGrid').innerHTML = '<p style="text-align:center;color:#999;grid-column:1/-1;">No hay ejercicios disponibles</p>';
+            document.getElementById('exercisesGrid').innerHTML =
+                '<p style="text-align:center;color:#999;grid-column:1/-1;">No hay ejercicios disponibles</p>';
         }
     } catch (error) {
         console.error('Error:', error);
-        document.getElementById('exercisesGrid').innerHTML = '<p style="text-align:center;color:#e53935;grid-column:1/-1;">Error al cargar ejercicios</p>';
+        document.getElementById('exercisesGrid').innerHTML =
+            '<p style="text-align:center;color:#e53935;grid-column:1/-1;">Error al cargar ejercicios</p>';
     }
 }
 
-function renderEjercicios(ejercicios) {
-    const grid = document.getElementById('exercisesGrid');
+function applyFilters() {
+    const activeBtn = document.querySelector('.filter-btn.active');
+    const filter = activeBtn ? activeBtn.dataset.filter : 'all';
+    const term   = (document.getElementById('searchExercises')?.value || '').toLowerCase().trim();
 
-    if (!ejercicios || ejercicios.length === 0) {
+    filteredExercises = exercisesData.filter(e => {
+        const typeOk = filter === 'all' || e.tipo === filter;
+        const termOk = !term ||
+            (e.titulo || '').toLowerCase().includes(term) ||
+            (e.descripcion || '').toLowerCase().includes(term);
+        return typeOk && termOk;
+    });
+
+    exerciseVisible = EXERCISE_PAGE_SIZE;
+    renderEjerciciosPaginated();
+}
+
+function renderEjerciciosPaginated() {
+    const grid    = document.getElementById('exercisesGrid');
+    const visible = filteredExercises.slice(0, exerciseVisible);
+
+    if (filteredExercises.length === 0) {
         grid.innerHTML = '<p style="text-align:center;color:#999;grid-column:1/-1;">No hay ejercicios disponibles</p>';
         return;
     }
 
-    grid.innerHTML = ejercicios.map(e => {
-        const img = e.imagen || 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=600&q=80';
-        const tipo = capitalize(e.tipo || 'cardio');
-        const nivel = capitalize(e.nivel || 'principiante');
-        const levelClass = 'level-' + (e.nivel || 'principiante');
+    let html = visible.map(e => renderEjercicioCard(e)).join('');
 
-        const duracionStat = e.duracion ? `
-            <div class="meta-item">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2"/></svg>
-                <span>${escapeHtml(String(e.duracion))} min</span>
-            </div>` : '';
-
-        const caloriasStat = e.calorias_quemadas ? `
-            <div class="meta-item">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" stroke-width="2"/></svg>
-                <span>${escapeHtml(String(e.calorias_quemadas))} kcal</span>
-            </div>` : '';
-
-        const musculoStat = e.musculo_objetivo ? `
-            <div class="meta-item">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6.5 6.5h11M6.5 17.5h11M3 12h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                <span>${escapeHtml(capitalize(e.musculo_objetivo))}</span>
-            </div>` : '';
-
-        const statsSection = (duracionStat || caloriasStat || musculoStat)
-            ? `<div class="exercise-stats">${duracionStat}${caloriasStat}${musculoStat}</div>`
-            : '';
-
-        return `<div class="exercise-card" data-type="${escapeHtml(e.tipo)}" data-level="${escapeHtml(e.nivel)}">
-            <div class="exercise-image">
-                <img src="${escapeHtml(img)}" alt="${escapeHtml(e.titulo)}"
-                     loading="lazy" decoding="async"
-                     onerror="this.style.display='none'">
-                <div class="exercise-badges">
-                    <span class="badge badge-type">${escapeHtml(tipo)}</span>
-                    <span class="badge badge-level ${levelClass}">${escapeHtml(nivel)}</span>
-                </div>
-            </div>
-            <div class="exercise-content">
-                <h3>${escapeHtml(e.titulo)}</h3>
-                <p class="exercise-description">${escapeHtml(e.descripcion || '')}</p>
-                ${statsSection}
-                <button class="btn btn-primary btn-block" onclick="showExerciseModal(${e.id})">Ver Rutina</button>
-            </div>
+    if (exerciseVisible < filteredExercises.length) {
+        const restantes = filteredExercises.length - exerciseVisible;
+        html += `<div style="grid-column:1/-1;text-align:center;margin:1.5rem 0 0.5rem;">
+            <button class="btn btn-secondary" onclick="mostrarMasEjercicios()" style="min-width:190px;">
+                Mostrar más (${restantes} restante${restantes !== 1 ? 's' : ''})
+            </button>
         </div>`;
-    }).join('');
+    }
+
+    grid.innerHTML = html;
+}
+
+function mostrarMasEjercicios() {
+    exerciseVisible += EXERCISE_PAGE_SIZE;
+    renderEjerciciosPaginated();
+}
+
+function renderEjercicioCard(e) {
+    const img      = e.imagen || 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=600&q=80';
+    const tipo     = capitalize(e.tipo || 'cardio');
+    const nivel    = capitalize(e.nivel || 'principiante');
+    const levelClass = 'level-' + (e.nivel || 'principiante');
+
+    const duracionStat = e.duracion ? `
+        <div class="meta-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2"/></svg>
+            <span>${escapeHtml(String(e.duracion))} min</span>
+        </div>` : '';
+
+    const caloriasStat = e.calorias_quemadas ? `
+        <div class="meta-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" stroke-width="2"/></svg>
+            <span>${escapeHtml(String(e.calorias_quemadas))} kcal</span>
+        </div>` : '';
+
+    const musculoStat = e.musculo_objetivo ? `
+        <div class="meta-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6.5 6.5h11M6.5 17.5h11M3 12h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <span>${escapeHtml(capitalize(e.musculo_objetivo))}</span>
+        </div>` : '';
+
+    const statsSection = (duracionStat || caloriasStat || musculoStat)
+        ? `<div class="exercise-stats">${duracionStat}${caloriasStat}${musculoStat}</div>`
+        : '';
+
+    return `<div class="exercise-card" data-type="${escapeHtml(e.tipo)}" data-level="${escapeHtml(e.nivel)}">
+        <div class="exercise-image">
+            <img src="${escapeHtml(img)}" alt="${escapeHtml(e.titulo)}"
+                 loading="lazy" decoding="async"
+                 onerror="this.style.display='none'">
+            <div class="exercise-badges">
+                <span class="badge badge-type">${escapeHtml(tipo)}</span>
+                <span class="badge badge-level ${levelClass}">${escapeHtml(nivel)}</span>
+            </div>
+        </div>
+        <div class="exercise-content">
+            <h3>${escapeHtml(e.titulo)}</h3>
+            <p class="exercise-description">${escapeHtml(e.descripcion || '')}</p>
+            ${statsSection}
+            <button class="btn btn-primary btn-block" onclick="showExerciseModal(${e.id})">Ver Rutina</button>
+        </div>
+    </div>`;
 }
 
 function showExerciseModal(id) {
@@ -114,7 +155,6 @@ function showExerciseModal(id) {
         </div>`;
     }
 
-    // Stats del modal — solo los que tienen valor
     const duracionBox  = e.duracion          ? `<div class="stat-box"><span class="stat-label">Duración</span><span class="stat-value">${escapeHtml(String(e.duracion))} min</span></div>` : '';
     const nivelBox     = `<div class="stat-box"><span class="stat-label">Nivel</span><span class="stat-value">${capitalize(e.nivel || 'principiante')}</span></div>`;
     const tipoBox      = `<div class="stat-box"><span class="stat-label">Tipo</span><span class="stat-value">${capitalize(e.tipo || 'cardio')}</span></div>`;
@@ -122,7 +162,6 @@ function showExerciseModal(id) {
     const musculoBox   = e.musculo_objetivo  ? `<div class="stat-box"><span class="stat-label">Músculo</span><span class="stat-value">${escapeHtml(capitalize(e.musculo_objetivo))}</span></div>` : '';
     const equipoBox    = e.equipamiento      ? `<div class="stat-box"><span class="stat-label">Equipo</span><span class="stat-value">${escapeHtml(capitalize(e.equipamiento))}</span></div>` : '';
 
-    // Músculos secundarios — lista de chips
     let secundariosSection = '';
     if (e.musculos_secundarios) {
         const lista = e.musculos_secundarios.split(',').map(s => s.trim()).filter(s => s);
@@ -176,29 +215,9 @@ function initFilters() {
 }
 
 function initSearch() {
-    const searchInput = document.getElementById('searchExercises');
-    if (!searchInput) return;
-
-    searchInput.addEventListener('input', function() {
-        const term = this.value.toLowerCase();
-        document.querySelectorAll('.exercise-card').forEach(card => {
-            const text = card.textContent.toLowerCase();
-            card.style.display = text.includes(term) ? '' : 'none';
-        });
-    });
-}
-
-function applyFilters() {
-    const activeBtn = document.querySelector('.filter-btn.active');
-    const filter = activeBtn ? activeBtn.dataset.filter : 'all';
-
-    document.querySelectorAll('.exercise-card').forEach(card => {
-        if (filter === 'all' || card.dataset.type === filter) {
-            card.style.display = '';
-        } else {
-            card.style.display = 'none';
-        }
-    });
+    const input = document.getElementById('searchExercises');
+    if (!input) return;
+    input.addEventListener('input', applyFilters);
 }
 
 function capitalize(str) {
@@ -212,4 +231,3 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
-

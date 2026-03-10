@@ -11,7 +11,7 @@ if (!$authController->isAuthenticated()) {
 $user = $authController->getCurrentUser();
 $currentPage = 'alimentacion';
 $pageTitle = 'Alimentación Saludable';
-$additionalCSS = ['alimentacion.css'];
+$additionalCSS = ['filters.css', 'alimentacion.css'];
 ?>
 
 <?php include '../../app/views/layouts/header.php'; ?>
@@ -30,7 +30,6 @@ $additionalCSS = ['alimentacion.css'];
             <button class="filter-btn" data-category="comida">Comida</button>
             <button class="filter-btn" data-category="cena">Cena</button>
             <button class="filter-btn" data-category="snack">Snacks</button>
-            <button class="filter-btn" data-category="postre">Postres</button>
         </div>
 
         <div class="search-box">

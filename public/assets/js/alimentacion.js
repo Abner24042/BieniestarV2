@@ -10,7 +10,7 @@ function getAutoCategory() {
     if (h >= 6  && h < 12) return 'desayuno';
     if (h >= 12 && h < 18) return 'comida';
     if (h >= 18)            return 'cena';
-    return 'all'; // madrugada → mostrar todo
+    return 'all';
 }
 
 function setAutoFilterButton() {
@@ -23,7 +23,10 @@ function setAutoFilterButton() {
     });
 }
 
-let recipesData = [];
+const RECIPE_PAGE_SIZE = 6;
+let recipesData      = [];
+let filteredRecipes  = [];
+let recipeVisible    = RECIPE_PAGE_SIZE;
 
 async function loadRecetas() {
     try {
@@ -32,72 +35,97 @@ async function loadRecetas() {
 
         if (data.success) {
             recipesData = data.recetas || [];
-            renderRecetas(recipesData);
+            applyRecipeFilter();
         } else {
-            document.getElementById('recipesGrid').innerHTML = '<p style="text-align:center;color:#999;grid-column:1/-1;">No hay recetas disponibles</p>';
+            document.getElementById('recipesGrid').innerHTML =
+                '<p style="text-align:center;color:#999;grid-column:1/-1;">No hay recetas disponibles</p>';
         }
     } catch (error) {
         console.error('Error:', error);
-        document.getElementById('recipesGrid').innerHTML = '<p style="text-align:center;color:#e53935;grid-column:1/-1;">Error al cargar recetas</p>';
+        document.getElementById('recipesGrid').innerHTML =
+            '<p style="text-align:center;color:#e53935;grid-column:1/-1;">Error al cargar recetas</p>';
     }
 }
 
-function renderRecetas(recetas) {
-    const grid = document.getElementById('recipesGrid');
+function applyRecipeFilter() {
+    const activeBtn = document.querySelector('.filter-btn.active');
+    const cat  = activeBtn ? activeBtn.dataset.category : 'all';
+    const term = (document.getElementById('searchRecipes')?.value || '').toLowerCase().trim();
 
-    if (!recetas || recetas.length === 0) {
+    filteredRecipes = recipesData.filter(r => {
+        const catOk  = cat === 'all' || r.categoria === cat;
+        const termOk = !term || (r.titulo || '').toLowerCase().includes(term);
+        return catOk && termOk;
+    });
+
+    recipeVisible = RECIPE_PAGE_SIZE;
+    renderRecetasPaginated();
+}
+
+function renderRecetasPaginated() {
+    const grid    = document.getElementById('recipesGrid');
+    const visible = filteredRecipes.slice(0, recipeVisible);
+
+    if (filteredRecipes.length === 0) {
         grid.innerHTML = '<p style="text-align:center;color:#999;grid-column:1/-1;">No hay recetas disponibles</p>';
         return;
     }
 
-    // Renderizar todas las tarjetas primero, luego aplicar filtro activo
-    grid.innerHTML = recetas.map(r => {
-        const img = r.imagen || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80';
-        const cat = capitalize(r.categoria || 'comida');
+    let html = visible.map(r => renderRecetaCard(r)).join('');
 
-        // Badges de dieta (máx 2)
-        let dietBadges = '';
-        if (r.etiquetas_dieta) {
-            try {
-                const tags = JSON.parse(r.etiquetas_dieta).slice(0, 2);
-                dietBadges = tags.map(t => `<span style="display:inline-block;font-size:0.65rem;padding:2px 7px;border-radius:20px;background:#e8f5e9;color:#2e7d32;margin-right:3px;margin-top:4px;">${escapeHtml(t)}</span>`).join('');
-            } catch(e) {}
-        }
-
-        const tipoCocina = r.tipo_cocina ? `<span style="font-size:0.72rem;color:#888;">🍳 ${escapeHtml(r.tipo_cocina)}&nbsp;</span>` : '';
-
-        return `<div class="recipe-card" data-category="${escapeHtml(r.categoria)}">
-            <div class="recipe-image">
-                <img src="${escapeHtml(img)}" alt="${escapeHtml(r.titulo)}" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80'">
-                <div class="recipe-badge">${escapeHtml(cat)}</div>
-            </div>
-            <div class="recipe-content">
-                <h3>${escapeHtml(r.titulo)}</h3>
-                <div style="min-height:18px;margin-bottom:4px;">${tipoCocina}${dietBadges}</div>
-                <div class="recipe-meta">
-                    <div class="meta-item">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2"/></svg>
-                        <span>${r.tiempo_preparacion ? r.tiempo_preparacion + ' min' : '— min'}</span>
-                    </div>
-                    <div class="meta-item">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" stroke-width="2"/></svg>
-                        <span>${r.calorias ? Math.round(r.calorias) + ' kcal' : '— kcal'}</span>
-                    </div>
-                    ${r.porciones ? `<div class="meta-item"><span>👤 ${r.porciones}</span></div>` : ''}
-                </div>
-                <button class="btn btn-primary btn-block" onclick="showRecipeModal(${r.id})">Ver Receta</button>
-            </div>
+    if (recipeVisible < filteredRecipes.length) {
+        const restantes = filteredRecipes.length - recipeVisible;
+        html += `<div style="grid-column:1/-1;text-align:center;margin:1.5rem 0 0.5rem;">
+            <button class="btn btn-secondary" onclick="mostrarMasRecetas()" style="min-width:190px;">
+                Mostrar más (${restantes} restante${restantes !== 1 ? 's' : ''})
+            </button>
         </div>`;
-    }).join('');
-
-    // Aplicar el filtro activo (puede ser el auto-seleccionado por hora)
-    const activeBtn = document.querySelector('.filter-btn.active');
-    if (activeBtn && activeBtn.dataset.category !== 'all') {
-        const cat = activeBtn.dataset.category;
-        document.querySelectorAll('.recipe-card').forEach(card => {
-            card.style.display = card.dataset.category === cat ? '' : 'none';
-        });
     }
+
+    grid.innerHTML = html;
+}
+
+function mostrarMasRecetas() {
+    recipeVisible += RECIPE_PAGE_SIZE;
+    renderRecetasPaginated();
+}
+
+function renderRecetaCard(r) {
+    const img = r.imagen || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80';
+    const cat = capitalize(r.categoria || 'comida');
+
+    let dietBadges = '';
+    if (r.etiquetas_dieta) {
+        try {
+            const tags = JSON.parse(r.etiquetas_dieta).slice(0, 2);
+            dietBadges = tags.map(t => `<span style="display:inline-block;font-size:0.65rem;padding:2px 7px;border-radius:20px;background:#e8f5e9;color:#2e7d32;margin-right:3px;margin-top:4px;">${escapeHtml(t)}</span>`).join('');
+        } catch(e) {}
+    }
+
+    const tipoCocina = r.tipo_cocina ? `<span style="font-size:0.72rem;color:#888;">🍳 ${escapeHtml(r.tipo_cocina)}&nbsp;</span>` : '';
+
+    return `<div class="recipe-card" data-category="${escapeHtml(r.categoria)}">
+        <div class="recipe-image">
+            <img src="${escapeHtml(img)}" alt="${escapeHtml(r.titulo)}" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80'">
+            <div class="recipe-badge">${escapeHtml(cat)}</div>
+        </div>
+        <div class="recipe-content">
+            <h3>${escapeHtml(r.titulo)}</h3>
+            <div style="min-height:18px;margin-bottom:4px;">${tipoCocina}${dietBadges}</div>
+            <div class="recipe-meta">
+                <div class="meta-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2"/></svg>
+                    <span>${r.tiempo_preparacion ? r.tiempo_preparacion + ' min' : '— min'}</span>
+                </div>
+                <div class="meta-item">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" stroke-width="2"/></svg>
+                    <span>${r.calorias ? Math.round(r.calorias) + ' kcal' : '— kcal'}</span>
+                </div>
+                ${r.porciones ? `<div class="meta-item"><span>👤 ${r.porciones}</span></div>` : ''}
+            </div>
+            <button class="btn btn-primary btn-block" onclick="showRecipeModal(${r.id})">Ver Receta</button>
+        </div>
+    </div>`;
 }
 
 function showRecipeModal(id) {
@@ -106,7 +134,6 @@ function showRecipeModal(id) {
 
     const img = r.imagen || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80';
 
-    // Tabla nutricional
     const hasNutrition = r.proteinas || r.carbohidratos || r.grasas || r.fibra || r.calorias;
     const nutritionTable = hasNutrition ? `
         <div style="margin:1rem 0;">
@@ -135,7 +162,6 @@ function showRecipeModal(id) {
             </div>
         </div>` : '';
 
-    // Etiquetas de salud
     let healthBadges = '';
     if (r.etiquetas_salud) {
         try {
@@ -149,7 +175,6 @@ function showRecipeModal(id) {
         } catch(e) {}
     }
 
-    // Etiquetas de dieta
     let dietBadges = '';
     if (r.etiquetas_dieta) {
         try {
@@ -223,23 +248,15 @@ function initFilters() {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-            const category = this.dataset.category;
-            document.querySelectorAll('.recipe-card').forEach(card => {
-                card.style.display = (category === 'all' || card.dataset.category === category) ? '' : 'none';
-            });
+            applyRecipeFilter();
         });
     });
 }
 
 function initSearch() {
-    const searchInput = document.querySelector('.search-box input');
-    if (!searchInput) return;
-    searchInput.addEventListener('input', function() {
-        const term = this.value.toLowerCase();
-        document.querySelectorAll('.recipe-card').forEach(card => {
-            card.style.display = card.textContent.toLowerCase().includes(term) ? '' : 'none';
-        });
-    });
+    const input = document.getElementById('searchRecipes');
+    if (!input) return;
+    input.addEventListener('input', applyRecipeFilter);
 }
 
 function capitalize(str) {

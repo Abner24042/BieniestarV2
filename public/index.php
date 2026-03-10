@@ -120,7 +120,9 @@ $router->get('/api/chat/conversaciones', APP_PATH . '/controllers/chat_get_conve
 $router->get('/api/chat/mensajes',       APP_PATH . '/controllers/chat_get_mensajes.php');
 $router->get('/api/chat/no-leidos',      APP_PATH . '/controllers/chat_get_no_leidos.php');
 $router->post('/api/chat/enviar',        APP_PATH . '/controllers/chat_enviar.php');
-$router->post('/api/chat/marcar-leido',  APP_PATH . '/controllers/chat_marcar_leido.php');
+$router->post('/api/chat/marcar-leido',      APP_PATH . '/controllers/chat_marcar_leido.php');
+$router->post('/api/chat/eliminar-mensaje', APP_PATH . '/controllers/chat_eliminar_mensaje.php');
+$router->post('/api/chat/eliminar-chat',    APP_PATH . '/controllers/chat_eliminar_chat.php');
 
 
 // CRON

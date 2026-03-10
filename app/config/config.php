@@ -80,4 +80,7 @@ function asset($path = '') {
     return $url;
 }
 
+// Clave de encriptación para mensajes de chat (AES-256-CBC, 32 bytes)
+define('CHAT_ENCRYPTION_KEY', hash('sha256', 'bieniestar_chat_secret_k3y_2026', true));
+
 // FIN DEL ARCHIVO - NO AGREGAR MÁS FUNCIONES AQUÍ

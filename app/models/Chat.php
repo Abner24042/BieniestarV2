@@ -35,6 +35,27 @@ class Chat {
         }
     }
 
+    /* ── Encriptación AES-256-CBC ───────────────────────────────────────── */
+
+    private function encrypt($text) {
+        if (!defined('CHAT_ENCRYPTION_KEY') || !$text) return $text;
+        $iv  = random_bytes(16);
+        $enc = openssl_encrypt($text, 'AES-256-CBC', CHAT_ENCRYPTION_KEY, OPENSSL_RAW_DATA, $iv);
+        return base64_encode($iv . $enc);
+    }
+
+    private function decrypt($data) {
+        if (!$data || !defined('CHAT_ENCRYPTION_KEY')) return $data;
+        $raw = base64_decode($data, true);
+        if ($raw === false || strlen($raw) < 17) return $data; // mensaje antiguo sin encriptar
+        $iv  = substr($raw, 0, 16);
+        $enc = substr($raw, 16);
+        $dec = openssl_decrypt($enc, 'AES-256-CBC', CHAT_ENCRYPTION_KEY, OPENSSL_RAW_DATA, $iv);
+        return $dec !== false ? $dec : $data;
+    }
+
+    /* ── Conversaciones ─────────────────────────────────────────────────── */
+
     public function getOCrearConversacion($usuarioId, $profesionalId) {
         $stmt = $this->db->prepare("SELECT id FROM chat_conversaciones WHERE usuario_id = :uid AND profesional_id = :pid");
         $stmt->execute([':uid' => $usuarioId, ':pid' => $profesionalId]);
@@ -69,7 +90,12 @@ class Chat {
             }
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':myId' => $userId, ':myId2' => $userId]);
-            return $stmt->fetchAll();
+            $rows = $stmt->fetchAll();
+
+            foreach ($rows as &$row) {
+                $row['ultimo_contenido'] = $this->decrypt($row['ultimo_contenido'] ?? '');
+            }
+            return $rows;
         } catch (PDOException $e) {
             return [];
         }
@@ -90,7 +116,12 @@ class Chat {
             $stmt->bindValue(':desde',  $desdeMensajeId, PDO::PARAM_INT);
             $stmt->bindValue(':limite', $limite,         PDO::PARAM_INT);
             $stmt->execute();
-            return $stmt->fetchAll();
+            $rows = $stmt->fetchAll();
+
+            foreach ($rows as &$row) {
+                $row['contenido'] = $this->decrypt($row['contenido']);
+            }
+            return $rows;
         } catch (PDOException $e) {
             return [];
         }
@@ -98,8 +129,9 @@ class Chat {
 
     public function enviarMensaje($conversacionId, $remitenteId, $contenido) {
         try {
+            $encrypted = $this->encrypt($contenido);
             $stmt = $this->db->prepare("INSERT INTO chat_mensajes (conversacion_id, remitente_id, contenido) VALUES (:cid, :rid, :cont)");
-            $stmt->execute([':cid' => $conversacionId, ':rid' => $remitenteId, ':cont' => $contenido]);
+            $stmt->execute([':cid' => $conversacionId, ':rid' => $remitenteId, ':cont' => $encrypted]);
             $msgId = $this->db->lastInsertId();
 
             $this->db->prepare("UPDATE chat_conversaciones SET ultimo_mensaje_at = CURRENT_TIMESTAMP WHERE id = :id")
@@ -110,6 +142,35 @@ class Chat {
             return false;
         }
     }
+
+    /* ── Eliminar mensaje (solo el remitente puede borrar el suyo) ───────── */
+
+    public function eliminarMensaje($mensajeId, $remitenteId) {
+        try {
+            $stmt = $this->db->prepare("DELETE FROM chat_mensajes WHERE id = :id AND remitente_id = :rid");
+            $stmt->execute([':id' => $mensajeId, ':rid' => $remitenteId]);
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
+    /* ── Eliminar conversación completa ─────────────────────────────────── */
+
+    public function eliminarChat($conversacionId, $userId) {
+        try {
+            if (!$this->validarParticipante($conversacionId, $userId)) return false;
+            $this->db->prepare("DELETE FROM chat_mensajes WHERE conversacion_id = :cid")
+                     ->execute([':cid' => $conversacionId]);
+            $this->db->prepare("DELETE FROM chat_conversaciones WHERE id = :cid")
+                     ->execute([':cid' => $conversacionId]);
+            return true;
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
+    /* ── Resto de métodos ───────────────────────────────────────────────── */
 
     public function marcarLeido($conversacionId, $receptorId) {
         try {

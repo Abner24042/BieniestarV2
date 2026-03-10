@@ -7,7 +7,10 @@ document.addEventListener('DOMContentLoaded', function() {
     initNewsFilters();
 });
 
-let newsData = [];
+const NEWS_PAGE_SIZE = 4;
+let newsData      = [];
+let filteredNews  = [];
+let newsVisible   = NEWS_PAGE_SIZE;
 
 async function loadNoticias() {
     try {
@@ -18,17 +21,80 @@ async function loadNoticias() {
             newsData = data.noticias || [];
             if (newsData.length > 0) {
                 renderFeatured(newsData[0]);
-                renderNoticias(newsData.slice(1));
+                applyNewsFilter();
             } else {
-                document.getElementById('newsGrid').innerHTML = '<p style="text-align:center;color:#999;grid-column:1/-1;">No hay noticias disponibles</p>';
+                document.getElementById('newsGrid').innerHTML =
+                    '<p style="text-align:center;color:#999;grid-column:1/-1;">No hay noticias disponibles</p>';
             }
         } else {
-            document.getElementById('newsGrid').innerHTML = '<p style="text-align:center;color:#999;grid-column:1/-1;">No hay noticias disponibles</p>';
+            document.getElementById('newsGrid').innerHTML =
+                '<p style="text-align:center;color:#999;grid-column:1/-1;">No hay noticias disponibles</p>';
         }
     } catch (error) {
         console.error('Error:', error);
-        document.getElementById('newsGrid').innerHTML = '<p style="text-align:center;color:#e53935;grid-column:1/-1;">Error al cargar noticias</p>';
+        document.getElementById('newsGrid').innerHTML =
+            '<p style="text-align:center;color:#e53935;grid-column:1/-1;">Error al cargar noticias</p>';
     }
+}
+
+function applyNewsFilter() {
+    const activeBtn = document.querySelector('.news-filters .filter-btn.active');
+    const filter    = activeBtn ? activeBtn.dataset.filter : 'all';
+
+    // El primer item es el destacado, no va en el grid
+    const pool = newsData.slice(1);
+    filteredNews = filter === 'all' ? pool : pool.filter(n => n.categoria === filter);
+
+    newsVisible = NEWS_PAGE_SIZE;
+    renderNoticiasPaginated();
+}
+
+function renderNoticiasPaginated() {
+    const grid    = document.getElementById('newsGrid');
+    const visible = filteredNews.slice(0, newsVisible);
+
+    if (filteredNews.length === 0) {
+        grid.innerHTML = '';
+        return;
+    }
+
+    let html = visible.map(n => renderNoticiaCard(n)).join('');
+
+    if (newsVisible < filteredNews.length) {
+        const restantes = filteredNews.length - newsVisible;
+        html += `<div style="grid-column:1/-1;text-align:center;margin:1.5rem 0 0.5rem;">
+            <button class="btn btn-secondary" onclick="mostrarMasNoticias()" style="min-width:190px;">
+                Mostrar más (${restantes} restante${restantes !== 1 ? 's' : ''})
+            </button>
+        </div>`;
+    }
+
+    grid.innerHTML = html;
+}
+
+function mostrarMasNoticias() {
+    newsVisible += NEWS_PAGE_SIZE;
+    renderNoticiasPaginated();
+}
+
+function renderNoticiaCard(n) {
+    const img = n.imagen || 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=600&q=80';
+    const cat = capitalize(n.categoria || 'general');
+    return `<article class="news-card" data-category="${escapeHtml(n.categoria)}">
+        <div class="news-image">
+            <img src="${escapeHtml(img)}" alt="${escapeHtml(n.titulo)}" onerror="this.src='https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=600&q=80'">
+            <div class="news-category-badge">${escapeHtml(cat)}</div>
+        </div>
+        <div class="news-content">
+            <div class="news-meta">
+                <span class="news-author">${n.autor ? 'Por: ' + escapeHtml(n.autor) : ''}</span>
+                <span class="news-date">${formatDate(n.fecha_publicacion)}</span>
+            </div>
+            <h3>${escapeHtml(n.titulo)}</h3>
+            <p>${escapeHtml(n.resumen || truncate(n.contenido, 180))}</p>
+            <a href="javascript:void(0)" class="read-more" onclick="showNewsModal(${n.id})">Leer artículo →</a>
+        </div>
+    </article>`;
 }
 
 function renderFeatured(noticia) {
@@ -50,42 +116,11 @@ function renderFeatured(noticia) {
     featured.style.display = '';
 }
 
-function renderNoticias(noticias) {
-    const grid = document.getElementById('newsGrid');
-
-    if (!noticias || noticias.length === 0) {
-        grid.innerHTML = '';
-        return;
-    }
-
-    grid.innerHTML = noticias.map(n => {
-        const img = n.imagen || 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=600&q=80';
-        const cat = capitalize(n.categoria || 'general');
-        return `<article class="news-card" data-category="${escapeHtml(n.categoria)}">
-            <div class="news-image">
-                <img src="${escapeHtml(img)}" alt="${escapeHtml(n.titulo)}" onerror="this.src='https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=600&q=80'">
-                <div class="news-category-badge">${escapeHtml(cat)}</div>
-            </div>
-            <div class="news-content">
-                <div class="news-meta">
-                    <span class="news-author">${n.autor ? 'Por: ' + escapeHtml(n.autor) : ''}</span>
-                    <span class="news-date">${formatDate(n.fecha_publicacion)}</span>
-                </div>
-                <h3>${escapeHtml(n.titulo)}</h3>
-                <p>${escapeHtml(n.resumen || truncate(n.contenido, 180))}</p>
-                <a href="javascript:void(0)" class="read-more" onclick="showNewsModal(${n.id})">Leer artículo →</a>
-            </div>
-        </article>`;
-    }).join('');
-}
-
 function showNewsModal(id) {
     const n = newsData.find(item => item.id == id);
     if (!n) return;
 
     const img = n.imagen || 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=1000&q=80';
-
-    // Usar contenido disponible; si está vacío, usar resumen
     const bodyText = (n.contenido && n.contenido.trim()) ? n.contenido : (n.resumen || '');
     const sourceLink = n.url_fuente
         ? `<div class="article-source"><a href="${escapeHtml(n.url_fuente)}" target="_blank" rel="noopener">Leer artículo completo →</a></div>`
@@ -119,20 +154,11 @@ function closeNewsModal() {
 function initNewsFilters() {
     document.querySelectorAll('.news-filters .filter-btn').forEach(btn => {
         btn.addEventListener('click', function() {
-            const filter = this.dataset.filter;
-
             document.querySelectorAll('.news-filters .filter-btn').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
+            applyNewsFilter();
 
-            document.querySelectorAll('.news-card').forEach(card => {
-                if (filter === 'all' || card.dataset.category === filter) {
-                    card.style.display = '';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-
-            // Featured always visible
+            // Featured siempre visible
             const featured = document.getElementById('featuredNews');
             if (featured) featured.style.display = '';
         });

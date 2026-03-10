@@ -24,12 +24,10 @@ $additionalCSS = ['filters.css', 'noticias.css'];
 
     <!-- Noticia Destacada (dinámica) -->
     <div class="featured-news" id="featuredNews" style="display:none;">
-        <div class="featured-image">
-            <img id="featuredImg" src="" alt="Noticia Destacada">
-            <div class="featured-badge">Destacado</div>
-        </div>
+        <img id="featuredImg" class="featured-bg-img" src="" alt="Noticia Destacada">
+        <div class="featured-badge">Destacado</div>
         <div class="featured-content">
-            <div class="news-meta">
+            <div class="featured-meta">
                 <span class="news-category" id="featuredCategory"></span>
                 <span class="news-date" id="featuredDate"></span>
             </div>

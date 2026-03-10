@@ -178,7 +178,27 @@
     font-size: 0.875rem;
     line-height: 1.5;
     word-break: break-word;
+    position: relative;
 }
+
+/* Botón eliminar mensaje — bote de basura blanco dentro de la burbuja */
+.chat-bubble-delete {
+    display: none;
+    margin-top: 5px;
+    margin-left: auto;
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+.chat-bubble-delete:hover { background: rgba(229, 57, 53, 0.8); }
 
 .chat-bubble.mine {
     background: #ff6b35;
@@ -202,6 +222,25 @@
 
 .chat-bubble.mine .chat-bubble-time  { text-align: right; }
 .chat-bubble.theirs .chat-bubble-time { text-align: left; }
+
+/* Botón borrar chat */
+.chat-header-del-btn {
+    background: rgba(244, 67, 54, 0.12);
+    color: #f44336;
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s;
+}
+.chat-header-del-btn:hover {
+    background: #f44336;
+    color: #fff;
+    border-color: #f44336;
+}
 
 /* Input area */
 .chat-input-area {

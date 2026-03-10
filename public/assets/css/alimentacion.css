@@ -18,27 +18,6 @@
     flex-wrap: wrap;
 }
 
-.filter-btn {
-    padding: 10px 20px;
-    border: 2px solid #e0e0e0;
-    background: white;
-    border-radius: 25px;
-    font-weight: 600;
-    color: #666;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.filter-btn:hover {
-    border-color: #ff6b35;
-    color: #ff6b35;
-}
-
-.filter-btn.active {
-    background: #ff6b35;
-    border-color: #ff6b35;
-    color: white;
-}
 
 .search-box {
     position: relative;
@@ -329,22 +308,6 @@
 /* ===========================================
    DARK MODE - Alimentación
    =========================================== */
-[data-theme="dark"] .filter-btn {
-    background: #2a2a2a;
-    border-color: #444;
-    color: #ccc;
-}
-
-[data-theme="dark"] .filter-btn:hover {
-    border-color: #ff6b35;
-    color: #ff6b35;
-}
-
-[data-theme="dark"] .filter-btn.active {
-    background: #ff6b35;
-    border-color: #ff6b35;
-    color: white;
-}
 
 [data-theme="dark"] .search-box input {
     background: #2a2a2a;

@@ -20,7 +20,7 @@ function chatInitPro(userId) {
     chatMiId  = userId;
     chatEsPro = true;
     chatCargarConversaciones();
-    chatBadgeInt = setInterval(chatActualizarBadgeGlobal, 30000);
+    chatBadgeInt = setInterval(chatActualizarBadgeGlobal, 5000);
     chatActualizarBadgeGlobal();
     // Polling automático de lista de conversaciones (nuevas conversaciones, badges)
     if (document.getElementById('chatConvList')) {
@@ -31,7 +31,7 @@ function chatInitPro(userId) {
 function chatInitUser(userId) {
     chatMiId  = userId;
     chatEsPro = false;
-    chatBadgeInt = setInterval(chatActualizarBadgeGlobal, 30000);
+    chatBadgeInt = setInterval(chatActualizarBadgeGlobal, 5000);
     chatActualizarBadgeGlobal();
     // Polling automático de lista de conversaciones (nuevas conversaciones, badges)
     if (document.getElementById('chatConvList')) {
@@ -90,7 +90,9 @@ async function chatAbrirConv(convId, nombre, otroId) {
     chatLastMsgId  = 0;
 
     const header = document.getElementById('chatMainHeader');
-    if (header) header.textContent = nombre;
+    if (header) header.innerHTML =
+        `<span style="flex:1;">${chatEsc(nombre)}</span>
+         <button class="chat-header-del-btn" onclick="chatEliminarChat()">Borrar chat</button>`;
 
     const msgs = document.getElementById('chatMessages');
     if (msgs) msgs.innerHTML = '';
@@ -319,8 +321,10 @@ async function chatCargarMensajes(containerId, scroll = false) {
         const wasAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 60;
 
         data.mensajes.forEach(m => {
+            const isMine = m.remitente_id == chatMiId;
             const wrap = document.createElement('div');
-            wrap.className = 'chat-bubble ' + (m.remitente_id == chatMiId ? 'mine' : 'theirs');
+            wrap.className = 'chat-bubble ' + (isMine ? 'mine' : 'theirs');
+            wrap.dataset.msgId = m.id;
 
             const txt = document.createElement('div');
             txt.textContent = m.contenido;
@@ -331,8 +335,19 @@ async function chatCargarMensajes(containerId, scroll = false) {
 
             wrap.appendChild(txt);
             wrap.appendChild(time);
-            container.appendChild(wrap);
 
+            if (isMine) {
+                const del = document.createElement('button');
+                del.className = 'chat-bubble-delete';
+                del.title = 'Eliminar mensaje';
+                del.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>';
+                del.onclick = (e) => { e.stopPropagation(); chatEliminarMensaje(m.id); };
+                wrap.appendChild(del);
+                wrap.addEventListener('mouseenter', () => del.style.display = 'flex');
+                wrap.addEventListener('mouseleave', () => del.style.display = 'none');
+            }
+
+            container.appendChild(wrap);
             chatLastMsgId = Math.max(chatLastMsgId, m.id);
         });
 
@@ -377,6 +392,60 @@ async function chatActualizarBadgeGlobal() {
         if (fabBadge) {
             fabBadge.textContent = total;
             fabBadge.style.display = total > 0 ? 'flex' : 'none';
+        }
+    } catch (e) {}
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ELIMINAR MENSAJE / CHAT
+───────────────────────────────────────────────────────────────────────── */
+
+async function chatEliminarMensaje(msgId) {
+    if (!confirm('¿Eliminar este mensaje?')) return;
+    try {
+        const res  = await fetch(API_URL + '/chat/eliminar-mensaje', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mensaje_id: msgId })
+        });
+        const data = await res.json();
+        if (data.success) {
+            const el = document.querySelector(`[data-msg-id="${msgId}"]`);
+            if (el) el.remove();
+        } else {
+            chatShowToast('No se pudo eliminar el mensaje', 'error');
+        }
+    } catch (e) {}
+}
+
+async function chatEliminarChat() {
+    if (!chatConvActiva?.id) return;
+    if (!confirm('¿Eliminar esta conversación y todos sus mensajes? Esta acción no se puede deshacer.')) return;
+    try {
+        const res  = await fetch(API_URL + '/chat/eliminar-chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ conversacion_id: chatConvActiva.id })
+        });
+        const data = await res.json();
+        if (data.success) {
+            if (chatPollingInt) { clearInterval(chatPollingInt); chatPollingInt = null; }
+            chatConvActiva = null;
+            chatLastMsgId  = 0;
+
+            const header = document.getElementById('chatMainHeader');
+            if (header) header.textContent = 'Selecciona una conversación';
+
+            const msgs = document.getElementById('chatMessages');
+            if (msgs) msgs.innerHTML = '<div class="chat-placeholder">Selecciona una conversación o inicia una nueva.</div>';
+
+            const inputArea = document.getElementById('chatInputArea');
+            if (inputArea) inputArea.style.display = 'none';
+
+            document.querySelectorAll('.chat-conv-item').forEach(el => el.classList.remove('active'));
+            chatCargarConversaciones();
+        } else {
+            chatShowToast('No se pudo eliminar la conversación', 'error');
         }
     } catch (e) {}
 }
