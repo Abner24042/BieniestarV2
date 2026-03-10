@@ -123,6 +123,7 @@ $router->post('/api/chat/enviar',        APP_PATH . '/controllers/chat_enviar.ph
 $router->post('/api/chat/marcar-leido',      APP_PATH . '/controllers/chat_marcar_leido.php');
 $router->post('/api/chat/eliminar-mensaje', APP_PATH . '/controllers/chat_eliminar_mensaje.php');
 $router->post('/api/chat/eliminar-chat',    APP_PATH . '/controllers/chat_eliminar_chat.php');
+$router->get('/api/admin/todos-usuarios',   APP_PATH . '/controllers/chat_get_todos_usuarios.php');
 
 
 // CRON

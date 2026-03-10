@@ -39,7 +39,9 @@
       "Bash(node deploy.js public/assets/js/admin-ejercicios.js)",
       "Bash(node deploy.js \"public/pages/dashboard.php\" \"public/pages/mi-plan.php\" \"public/assets/js/mi-plan.js\" \"public/assets/css/mi-plan.css\" \"public/assets/css/dashboard.css\" \"app/views/layouts/header.php\" \"public/index.php\" \"public/pages/profesional/panel.php\" \"public/assets/js/profesional-planes.js\" \"app/models/Plan.php\" \"app/models/Ejercicio.php\" \"app/controllers/get_mi_plan.php\" \"app/controllers/pro_get_usuarios_list.php\" \"app/controllers/pro_plan_get_usuario.php\" \"app/controllers/pro_plan_asignar_ejercicio.php\" \"app/controllers/pro_plan_asignar_receta.php\" \"app/controllers/pro_plan_recomendar.php\" \"app/controllers/pro_plan_remove.php\")",
       "Bash(node deploy.js \"app/controllers/pro_get_usuarios_list.php\")",
-      "Bash(node deploy.js \"public/assets/js/profesional-planes.js\")"
+      "Bash(node deploy.js \"public/assets/js/profesional-planes.js\")",
+      "Bash(sftp -o StrictHostKeyChecking=no -o BatchMode=no -P 22 a28641@access-5019601772.webspace-host.com)",
+      "Bash(sshpass -p:*)"
     ]
   }
 }

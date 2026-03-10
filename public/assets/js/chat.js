@@ -124,13 +124,15 @@ async function chatAbrirModalNuevo() {
     const sel = document.getElementById('chatNuevoUsuario');
     if (sel && sel.options.length <= 1) {
         try {
-            const res  = await fetch(API_URL + '/pro/usuarios-list');
+            const endpoint = window.chatEsAdmin ? '/admin/todos-usuarios' : '/pro/usuarios-list';
+            const res  = await fetch(API_URL + endpoint);
             const data = await res.json();
             if (data.success) {
                 sel.innerHTML = '<option value="">— Selecciona un usuario —</option>' +
-                    data.usuarios.map(u =>
-                        `<option value="${u.id}" data-nombre="${chatEscAttr(u.nombre)}">${chatEsc(u.nombre)} (${chatEsc(u.correo)})</option>`
-                    ).join('');
+                    data.usuarios.map(u => {
+                        const extra = u.rol ? ` [${chatEsc(u.rol)}]` : '';
+                        return `<option value="${u.id}" data-nombre="${chatEscAttr(u.nombre)}">${chatEsc(u.nombre)}${extra} (${chatEsc(u.correo)})</option>`;
+                    }).join('');
             }
         } catch (e) {}
     }

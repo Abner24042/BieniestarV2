@@ -20,7 +20,10 @@
     padding: 1.5rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     display: flex;
+    flex-direction: row;
+    align-items: center;
     gap: 1rem;
+    min-height: auto;
     transition: all 0.3s;
 }
 
@@ -202,7 +205,7 @@
 /* Responsive */
 @media (max-width: 768px) {
     .admin-dashboard {
-        padding: 1rem;
+        padding: 0.75rem;
     }
 
     .admin-stats-grid {
@@ -220,6 +223,35 @@
 
     .stat-icon {
         margin: 0 auto;
+    }
+
+    /* Tabla responsive */
+    .admin-section {
+        padding: 1rem;
+    }
+
+    .admin-table-wrapper {
+        padding: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .admin-table th,
+    .admin-table td {
+        padding: 0.65rem 0.5rem;
+        font-size: 0.82rem;
+        white-space: nowrap;
+    }
+
+    /* Ocultar columna Fecha Registro en móvil */
+    .admin-table th:nth-child(5),
+    .admin-table td:nth-child(5) {
+        display: none;
+    }
+
+    .rol-badge {
+        font-size: 0.72rem;
+        padding: 3px 8px;
     }
 }
 
