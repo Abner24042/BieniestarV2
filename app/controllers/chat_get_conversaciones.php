@@ -13,9 +13,7 @@ if (!$authController->isAuthenticated()) {
 }
 
 $yo = $authController->getCurrentUser();
-$rolesProf = ['coach', 'nutriologo', 'psicologo'];
-$esProfesional = in_array($yo['rol'], $rolesProf);
 
 $model = new Chat();
-$conversaciones = $model->getConversaciones((int)$yo['id'], $esProfesional);
+$conversaciones = $model->getConversaciones((int)$yo['id']);
 echo json_encode(['success' => true, 'conversaciones' => $conversaciones]);

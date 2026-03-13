@@ -151,20 +151,50 @@ $additionalCSS = ['admin.css', 'profesional.css'];
 
         <!-- Recetas pendientes de aprobación -->
         <div class="admin-section" style="width: 100%;" id="sectionPendingRecetas">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap:wrap; gap:0.5rem;">
                 <h2>⏳ Recetas Pendientes de Aprobación <span id="pendingCount" style="font-size:0.85rem;background:#ff6b35;color:white;padding:2px 10px;border-radius:20px;margin-left:8px;"></span></h2>
                 <span style="font-size:0.8rem;color:#999;">Se eliminan automáticamente si no se aprueban en 48h</span>
             </div>
+            <div style="display:flex;gap:0.75rem;margin-bottom:1rem;flex-wrap:wrap;">
+                <input type="text" id="pendingSearch" placeholder="🔍 Buscar receta..." oninput="aplicarFiltrosPending()"
+                    style="flex:1;min-width:180px;padding:8px 12px;background:#2a2a2a;border:1px solid #444;border-radius:8px;color:#fff;font-size:0.875rem;">
+                <select id="pendingCatFilter" onchange="aplicarFiltrosPending()"
+                    style="padding:8px 12px;background:#2a2a2a;border:1px solid #444;border-radius:8px;color:#fff;font-size:0.875rem;">
+                    <option value="">Todas las categorías</option>
+                    <option value="desayuno">Desayuno</option>
+                    <option value="almuerzo">Almuerzo</option>
+                    <option value="comida">Comida</option>
+                    <option value="merienda">Merienda</option>
+                    <option value="cena">Cena</option>
+                    <option value="snack">Snack</option>
+                    <option value="postre">Postre</option>
+                </select>
+            </div>
             <div id="pendingRecetasGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;">
                 <p style="color:#999;grid-column:1/-1;">Cargando...</p>
+            </div>
+            <div style="text-align:center;margin-top:1.25rem;">
+                <button id="btnMostrarMasPending" onclick="mostrarMasPending()" class="btn btn-secondary" style="display:none;">Mostrar más</button>
+            </div>
+        </div>
+
+        <!-- Modal detalle receta pendiente -->
+        <div id="modalPendingDetalle" onclick="if(event.target===this)cerrarDetallePending()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9998;overflow-y:auto;padding:2rem 1rem;">
+            <div style="max-width:620px;margin:0 auto;background:#1a1a1a;border-radius:16px;overflow:hidden;position:relative;">
+                <button onclick="cerrarDetallePending()" style="position:absolute;top:12px;right:14px;background:none;border:none;color:#aaa;font-size:1.5rem;cursor:pointer;z-index:1;">✕</button>
+                <div id="modalPendingContent"></div>
             </div>
         </div>
 
         <!-- Mis Recetas (manuales y aprobadas) -->
         <div class="admin-section" style="width: 100%;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                 <h2>🍽️ Mis Recetas</h2>
                 <button class="btn btn-primary" id="btnNuevaRecetaPro">+ Nueva Receta</button>
+            </div>
+            <div style="margin-bottom:1rem;">
+                <input type="text" id="proRecetasSearch" placeholder="🔍 Buscar en mis recetas..." oninput="filtrarProRecetas()"
+                    style="width:100%;max-width:320px;padding:8px 12px;background:#2a2a2a;border:1px solid #444;border-radius:8px;color:#fff;font-size:0.875rem;">
             </div>
             <div class="admin-table-wrapper">
                 <table class="admin-table">

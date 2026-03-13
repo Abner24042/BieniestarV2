@@ -216,48 +216,52 @@ function generarPlanAlimPDF(plan) {
     const green = [76, 175, 80];
     const dark = [17, 17, 17];
     const gray = [100, 100, 100];
+    const especialista = (typeof PROFESSIONAL_USER !== 'undefined' && PROFESSIONAL_USER.nombre) ? PROFESSIONAL_USER.nombre : '';
 
     // Header
     doc.setFillColor(...green);
-    doc.rect(0, 0, 210, 28, 'F');
+    doc.rect(0, 0, 210, 32, 'F');
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18);
+    doc.setFontSize(17);
     doc.setFont('helvetica', 'bold');
-    doc.text('PLAN ALIMENTICIO', 14, 12);
-    doc.setFontSize(11);
+    doc.text('PLAN ALIMENTICIO', 14, 13);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('Bienestar — Plan Nutricional Personalizado', 14, 20);
+    doc.text('Bienestar — Plan Nutricional Personalizado', 14, 21);
+    if (especialista) {
+        doc.text('Nutriólogo/a: ' + especialista, 14, 28);
+    }
 
     // Plan info
-    let y = 38;
+    let y = 42;
     doc.setTextColor(...dark);
-    doc.setFontSize(16);
+    doc.setFontSize(15);
     doc.setFont('helvetica', 'bold');
     doc.text(plan.nombre, 14, y);
     y += 7;
 
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...gray);
-    let infoLine = `Duración: ${plan.duracion_semanas} semana(s)   |   Recetas: ${(plan.recetas || []).length}`;
-    if (plan.objetivo) infoLine += `   |   Objetivo: ${plan.objetivo}`;
-    doc.text(infoLine, 14, y);
-    y += 6;
+    const partes = ['Duración: ' + plan.duracion_semanas + ' semana(s)', 'Recetas: ' + (plan.recetas || []).length];
+    if (plan.objetivo) partes.push('Objetivo: ' + plan.objetivo);
+    doc.text(partes.join('   |   '), 14, y);
+    y += 5;
 
     if (plan.descripcion) {
-        doc.setFontSize(9);
+        y += 2;
         const lines = doc.splitTextToSize(plan.descripcion, 182);
         doc.text(lines, 14, y);
-        y += lines.length * 5 + 2;
+        y += lines.length * 4.5 + 1;
     }
 
     y += 4;
     doc.setDrawColor(...green);
     doc.setLineWidth(0.5);
     doc.line(14, y, 196, y);
-    y += 8;
+    y += 7;
 
-    // Group recipes by day
+    // Group recipes by day — columnas suman 182mm
     if (plan.recetas && plan.recetas.length) {
         const byDay = {};
         plan.recetas.forEach(r => {
@@ -274,7 +278,7 @@ function generarPlanAlimPDF(plan) {
                     diaLabel,
                     r.tiempo_comida ? r.tiempo_comida.charAt(0).toUpperCase() + r.tiempo_comida.slice(1) : '—',
                     r.receta_titulo || '—',
-                    r.porciones || 1,
+                    r.porciones != null ? String(r.porciones) : '1',
                     r.calorias ? r.calorias + ' kcal' : '—',
                     r.notas || '',
                 ]);
@@ -283,18 +287,30 @@ function generarPlanAlimPDF(plan) {
 
         doc.autoTable({
             startY: y,
-            head: [['Día', 'Momento', 'Receta', 'Porciones', 'Calorías', 'Notas']],
+            margin: { left: 14, right: 14 },
+            head: [['Día', 'Momento', 'Receta', 'Porc.', 'Calorías', 'Notas']],
             body: tableBody,
-            styles: { fontSize: 9, cellPadding: 4 },
-            headStyles: { fillColor: green, textColor: 255, fontStyle: 'bold' },
+            styles: {
+                fontSize: 9,
+                cellPadding: { top: 4, right: 4, bottom: 4, left: 4 },
+                valign: 'middle',
+                overflow: 'linebreak',
+            },
+            headStyles: {
+                fillColor: green,
+                textColor: 255,
+                fontStyle: 'bold',
+                valign: 'middle',
+                halign: 'center',
+            },
             alternateRowStyles: { fillColor: [240, 249, 240] },
             columnStyles: {
-                0: { cellWidth: 24, fontStyle: 'bold' },
-                1: { cellWidth: 24 },
-                2: { cellWidth: 55 },
-                3: { cellWidth: 20, halign: 'center' },
+                0: { cellWidth: 25, fontStyle: 'bold' },
+                1: { cellWidth: 22, halign: 'center' },
+                2: { cellWidth: 58 },
+                3: { cellWidth: 15, halign: 'center' },
                 4: { cellWidth: 24, halign: 'center' },
-                5: { cellWidth: 40 },
+                5: { cellWidth: 38 },
             },
         });
     } else {
@@ -305,11 +321,12 @@ function generarPlanAlimPDF(plan) {
 
     // Footer
     const pageCount = doc.internal.getNumberOfPages();
+    const fechaHoy = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
     for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(180, 180, 180);
-        doc.text('Bienestar — Plan generado el ' + new Date().toLocaleDateString('es-MX'), 14, 290);
+        doc.text('Bienestar — Generado el ' + fechaHoy, 14, 290);
         doc.text(`Página ${i} de ${pageCount}`, 196, 290, { align: 'right' });
     }
 

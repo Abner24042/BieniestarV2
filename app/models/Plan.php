@@ -8,6 +8,15 @@ class Plan {
         $database = new Database();
         $this->db = $database->getConnection();
         $this->ensureTables();
+        $this->ensureColumns();
+    }
+
+    private function ensureColumns() {
+        // Add dia_semana to plan_recetas (0=all days, 1-7=Mon-Sun)
+        try { $this->db->exec("ALTER TABLE plan_recetas ADD COLUMN dia_semana INT NOT NULL DEFAULT 0"); } catch (PDOException $e) {}
+        // Migrate unique key to include dia_semana so same recipe can appear on different days
+        try { $this->db->exec("ALTER TABLE plan_recetas DROP INDEX unique_asig_rec"); } catch (PDOException $e) {}
+        try { $this->db->exec("ALTER TABLE plan_recetas ADD UNIQUE KEY unique_asig_rec (usuario_id, receta_id, dia_semana)"); } catch (PDOException $e) {}
     }
 
     private function ensureTables() {
@@ -58,12 +67,12 @@ class Plan {
         }
     }
 
-    public function asignarReceta($usuarioId, $recetaId, $asignadoPor, $notas = null) {
+    public function asignarReceta($usuarioId, $recetaId, $asignadoPor, $notas = null, $diaSemana = 0) {
         try {
             $stmt = $this->db->prepare(
-                "INSERT IGNORE INTO plan_recetas (usuario_id, receta_id, asignado_por, notas) VALUES (:uid, :rid, :por, :notas)"
+                "INSERT IGNORE INTO plan_recetas (usuario_id, receta_id, asignado_por, notas, dia_semana) VALUES (:uid, :rid, :por, :notas, :dia)"
             );
-            $stmt->execute([':uid' => $usuarioId, ':rid' => $recetaId, ':por' => $asignadoPor, ':notas' => $notas]);
+            $stmt->execute([':uid' => $usuarioId, ':rid' => $recetaId, ':por' => $asignadoPor, ':notas' => $notas, ':dia' => (int)$diaSemana]);
             return true;
         } catch (PDOException $e) {
             return false;
@@ -82,7 +91,7 @@ class Plan {
         }
     }
 
-    public function getMiPlan($usuarioId) {
+    public function getMiPlan($usuarioId, $filtrarPorDia = false) {
         try {
             $stmt = $this->db->prepare("
                 SELECT pe.id AS asignacion_id, pe.notas, pe.asignado_por,
@@ -98,15 +107,16 @@ class Plan {
             $ejercicios = $stmt->fetchAll();
 
             $stmt = $this->db->prepare("
-                SELECT pr.id AS asignacion_id, pr.notas, pr.asignado_por,
+                SELECT pr.id AS asignacion_id, pr.notas, pr.asignado_por, pr.dia_semana,
                        r.id, r.titulo, r.descripcion, r.categoria, r.tiempo_preparacion,
                        r.calorias, r.imagen, r.ingredientes, r.instrucciones, r.porciones
                 FROM plan_recetas pr
                 JOIN recetas r ON r.id = pr.receta_id
                 WHERE pr.usuario_id = :uid AND r.activo = 1
-                ORDER BY pr.fecha_asignacion DESC
+                  AND (:filterDay = 0 OR pr.dia_semana = 0 OR pr.dia_semana = WEEKDAY(NOW()) + 1)
+                ORDER BY pr.dia_semana ASC, pr.fecha_asignacion DESC
             ");
-            $stmt->execute([':uid' => $usuarioId]);
+            $stmt->execute([':uid' => $usuarioId, ':filterDay' => $filtrarPorDia ? 1 : 0]);
             $recetas = $stmt->fetchAll();
 
             $stmt = $this->db->prepare("
@@ -184,12 +194,19 @@ class Plan {
         }
     }
 
-    public function getRecetasDisponibles() {
+    public function getRecetasDisponibles($nutriologoEmail = null) {
         try {
-            $stmt = $this->db->prepare(
-                "SELECT id, titulo, categoria, tiempo_preparacion FROM recetas WHERE activo = 1 ORDER BY titulo ASC"
-            );
-            $stmt->execute();
+            if ($nutriologoEmail) {
+                $stmt = $this->db->prepare(
+                    "SELECT id, titulo, categoria, tiempo_preparacion FROM recetas WHERE activo = 1 AND (creado_por = :email OR aprobada = 1) ORDER BY titulo ASC"
+                );
+                $stmt->execute([':email' => $nutriologoEmail]);
+            } else {
+                $stmt = $this->db->prepare(
+                    "SELECT id, titulo, categoria, tiempo_preparacion FROM recetas WHERE activo = 1 ORDER BY titulo ASC"
+                );
+                $stmt->execute();
+            }
             return $stmt->fetchAll();
         } catch (PDOException $e) {
             return [];

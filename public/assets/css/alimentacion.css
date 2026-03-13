@@ -190,21 +190,93 @@
 .recipe-modal-content {
     display: flex;
     flex-direction: column;
-    gap: 25px;
+}
+
+/* Fila superior: imagen + stats */
+.recipe-modal-top {
+    display: flex;
+    min-height: 190px;
+    padding: 16px 16px 0 16px;
+    gap: 16px;
+}
+
+.recipe-modal-image {
+    flex: 0 0 42%;
+    max-width: 42%;
+    overflow: hidden;
+    background: #111;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
 }
 
 .recipe-modal-image img {
     width: 100%;
-    max-height: 300px;
-    object-fit: cover;
+    height: 100%;
+    object-fit: contain;
+    display: block;
     border-radius: 12px;
+}
+
+.recipe-modal-side {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 16px 4px 0;
+    justify-content: center;
+}
+
+/* Barra nutricional full-width */
+.recipe-modal-nutbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 14px 16px;
+    margin-top: 14px;
+    border-top: 1px solid #eee;
+}
+
+.nutbar-item {
+    flex: 1;
+    text-align: center;
+    padding: 10px 6px;
+    min-width: 60px;
+    border-radius: 8px;
+}
+
+.nutbar-val {
+    display: block;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.nutbar-lbl {
+    display: block;
+    font-size: 0.65rem;
+    color: #888;
+    margin-top: 2px;
+}
+
+.nutbar-kcal  { background: #fff3e0; } .nutbar-kcal  .nutbar-val { color: #ff6d00; }
+.nutbar-prot  { background: #e8f5e9; } .nutbar-prot  .nutbar-val { color: #2e7d32; }
+.nutbar-carbs { background: #e3f2fd; } .nutbar-carbs .nutbar-val { color: #1565c0; }
+.nutbar-fat   { background: #fce4ec; } .nutbar-fat   .nutbar-val { color: #c2185b; }
+.nutbar-fiber { background: #f3e5f5; } .nutbar-fiber .nutbar-val { color: #7b1fa2; }
+
+/* Detalle scrollable */
+.recipe-modal-detail {
+    padding: 20px 24px;
+    overflow-y: auto;
+    max-height: 40vh;
 }
 
 .recipe-stats {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 15px;
-    margin-bottom: 30px;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
 }
 
 .stat-box {
@@ -302,6 +374,21 @@
 
     .tips-grid {
         grid-template-columns: 1fr;
+    }
+
+    .recipe-modal-top {
+        flex-direction: column;
+        min-height: auto;
+    }
+
+    .recipe-modal-image {
+        flex: none;
+        max-width: 100%;
+        height: 200px;
+    }
+
+    .recipe-modal-detail {
+        max-height: none;
     }
 }
 
@@ -409,4 +496,31 @@
 
 [data-theme="dark"] .recipe-modal-info p {
     color: #aaa;
+}
+
+[data-theme="dark"] .recipe-modal-nutbar {
+    background: #1e1e1e;
+    border-top-color: #333;
+}
+
+[data-theme="dark"] .nutbar-kcal  { background: #3a1800; } [data-theme="dark"] .nutbar-kcal  .nutbar-val { color: #ff8f3f; }
+[data-theme="dark"] .nutbar-prot  { background: #0d2e10; } [data-theme="dark"] .nutbar-prot  .nutbar-val { color: #66bb6a; }
+[data-theme="dark"] .nutbar-carbs { background: #0a1e3a; } [data-theme="dark"] .nutbar-carbs .nutbar-val { color: #64b5f6; }
+[data-theme="dark"] .nutbar-fat   { background: #3a0a1e; } [data-theme="dark"] .nutbar-fat   .nutbar-val { color: #f06292; }
+[data-theme="dark"] .nutbar-fiber { background: #1e0a3a; } [data-theme="dark"] .nutbar-fiber .nutbar-val { color: #ce93d8; }
+
+[data-theme="dark"] .nutbar-lbl {
+    color: #888;
+}
+
+[data-theme="dark"] .recipe-modal-side .stat-box {
+    background: #2a2a2a;
+}
+
+[data-theme="dark"] .recipe-modal-detail h3 {
+    color: #e8e8e8;
+}
+
+[data-theme="dark"] .recipe-modal-detail {
+    border-top-color: #333;
 }

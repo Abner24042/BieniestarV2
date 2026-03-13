@@ -48,7 +48,7 @@ async function cargarRutinas() {
 
 async function cargarEjerciciosDisponibles() {
     try {
-        const res = await fetch(API_URL + '/pro/ejercicios');
+        const res = await fetch(API_URL + '/ejercicios');
         const data = await res.json();
         if (data.success) ejerciciosDisponibles = data.ejercicios || [];
     } catch (e) {}
@@ -205,39 +205,47 @@ function generarRutinaPDF(rutina) {
     const orange = [255, 107, 53];
     const dark = [17, 17, 17];
     const gray = [100, 100, 100];
+    const especialista = (typeof PROFESSIONAL_USER !== 'undefined' && PROFESSIONAL_USER.nombre) ? PROFESSIONAL_USER.nombre : '';
 
     // Header
     doc.setFillColor(...orange);
-    doc.rect(0, 0, 210, 28, 'F');
+    doc.rect(0, 0, 210, 32, 'F');
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18);
+    doc.setFontSize(17);
     doc.setFont('helvetica', 'bold');
-    doc.text('RUTINA DE ENTRENAMIENTO', 14, 12);
-    doc.setFontSize(11);
+    doc.text('RUTINA DE ENTRENAMIENTO', 14, 13);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('Bienestar — Plan Personalizado', 14, 20);
+    doc.text('Bienestar — Plan Personalizado', 14, 21);
+    if (especialista) {
+        doc.text('Coach: ' + especialista, 14, 28);
+    }
 
     // Rutina info
-    let y = 38;
+    let y = 42;
     doc.setTextColor(...dark);
-    doc.setFontSize(16);
+    doc.setFontSize(15);
     doc.setFont('helvetica', 'bold');
     doc.text(rutina.nombre, 14, y);
     y += 7;
 
     const nivelCap = (rutina.nivel || 'principiante').charAt(0).toUpperCase() + (rutina.nivel || '').slice(1);
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...gray);
-    doc.text(`Nivel: ${nivelCap}   |   Ejercicios: ${(rutina.ejercicios || []).length}   |   Duración estimada: ${rutina.duracion_total ? rutina.duracion_total + ' min' : 'N/D'}`, 14, y);
-    y += 6;
+    const infoLinea = [
+        'Nivel: ' + nivelCap,
+        'Ejercicios: ' + (rutina.ejercicios || []).length,
+        'Duración: ' + (rutina.duracion_total ? rutina.duracion_total + ' min' : 'N/D'),
+    ].join('   |   ');
+    doc.text(infoLinea, 14, y);
+    y += 5;
 
     if (rutina.descripcion) {
-        doc.setTextColor(...gray);
-        doc.setFontSize(9);
+        y += 2;
         const lines = doc.splitTextToSize(rutina.descripcion, 182);
         doc.text(lines, 14, y);
-        y += lines.length * 5 + 2;
+        y += lines.length * 4.5 + 1;
     }
 
     // Separator
@@ -245,35 +253,47 @@ function generarRutinaPDF(rutina) {
     doc.setDrawColor(...orange);
     doc.setLineWidth(0.5);
     doc.line(14, y, 196, y);
-    y += 8;
+    y += 7;
 
-    // Exercises table
+    // Exercises table — columnas suman 182mm (ancho útil exacto)
     if (rutina.ejercicios && rutina.ejercicios.length) {
         const tableBody = rutina.ejercicios.map((ej, i) => [
             i + 1,
             ej.ejercicio_titulo || '—',
-            ej.series || '—',
+            ej.series != null ? String(ej.series) : '—',
             ej.repeticiones || '—',
-            ej.descanso_seg ? ej.descanso_seg + 's' : '—',
+            ej.descanso_seg != null ? ej.descanso_seg + 's' : '—',
             ej.musculo_objetivo || '—',
             ej.notas || '',
         ]);
 
         doc.autoTable({
             startY: y,
+            margin: { left: 14, right: 14 },
             head: [['#', 'Ejercicio', 'Series', 'Reps', 'Descanso', 'Músculo', 'Notas']],
             body: tableBody,
-            styles: { fontSize: 9, cellPadding: 4 },
-            headStyles: { fillColor: orange, textColor: 255, fontStyle: 'bold' },
+            styles: {
+                fontSize: 9,
+                cellPadding: { top: 4, right: 4, bottom: 4, left: 4 },
+                valign: 'middle',
+                overflow: 'linebreak',
+            },
+            headStyles: {
+                fillColor: orange,
+                textColor: 255,
+                fontStyle: 'bold',
+                valign: 'middle',
+                halign: 'center',
+            },
             alternateRowStyles: { fillColor: [255, 248, 244] },
             columnStyles: {
-                0: { cellWidth: 8, halign: 'center' },
-                1: { cellWidth: 45 },
-                2: { cellWidth: 16, halign: 'center' },
+                0: { cellWidth: 10, halign: 'center' },
+                1: { cellWidth: 52 },
+                2: { cellWidth: 15, halign: 'center' },
                 3: { cellWidth: 22, halign: 'center' },
-                4: { cellWidth: 22, halign: 'center' },
-                5: { cellWidth: 32 },
-                6: { cellWidth: 40 },
+                4: { cellWidth: 18, halign: 'center' },
+                5: { cellWidth: 30 },
+                6: { cellWidth: 35 },
             },
         });
     } else {
@@ -284,15 +304,16 @@ function generarRutinaPDF(rutina) {
 
     // Footer
     const pageCount = doc.internal.getNumberOfPages();
+    const fechaHoy = new Date().toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' });
     for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i);
         doc.setFontSize(8);
         doc.setTextColor(180, 180, 180);
-        doc.text('Bienestar — Plan generado el ' + new Date().toLocaleDateString('es-MX'), 14, 290);
-        doc.text(`Página ${i} de ${pageCount}`, 196, 290, { align: 'right' });
+        doc.text('Bienestar — Generado el ' + fechaHoy, 14, 290);
+        doc.text('Página ' + i + ' de ' + pageCount, 196, 290, { align: 'right' });
     }
 
-    doc.save(`rutina-${rutina.nombre.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.pdf`);
+    doc.save('rutina-' + rutina.nombre.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.pdf');
 }
 
 // ─── Asignar rutina a usuario ─────────────────────────────────────

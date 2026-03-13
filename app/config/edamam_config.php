@@ -18,7 +18,10 @@ define('EDAMAM_CRON_SECRET', 'bieniestar_recetas_2026_e9r3k');
 // Categorías a buscar: categoria_bd => query Edamam
 define('EDAMAM_CATEGORIES', [
     'desayuno' => 'healthy breakfast',
+    'almuerzo' => 'light lunch brunch',
     'comida'   => 'healthy lunch meal',
+    'merienda' => 'afternoon snack light',
     'cena'     => 'healthy dinner',
     'snack'    => 'healthy snack',
+    'postre'   => 'healthy dessert',
 ]);

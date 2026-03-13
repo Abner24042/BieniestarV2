@@ -25,7 +25,9 @@ $planBase = $model->getMiPlan($usuarioId);
 $planBase['recomendaciones'] = $model->getRecomendacionesPorProEnPlan($usuarioId, $profesional['correo']);
 
 $ejerciciosDisponibles = $model->getEjerciciosDisponibles();
-$recetasDisponibles    = $model->getRecetasDisponibles();
+$recetasDisponibles    = $profesional['rol'] === 'nutriologo'
+    ? $model->getRecetasDisponibles($profesional['correo'])
+    : $model->getRecetasDisponibles();
 
 echo json_encode([
     'success'   => true,

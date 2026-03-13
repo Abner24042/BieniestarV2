@@ -21,8 +21,8 @@ $additionalCSS = ['citas.css'];
         <p>Consulta las citas agendadas por tu especialista</p>
     </div>
 
-    <div class="appointment-container" style="grid-template-columns: 1fr;">
-        <!-- Calendario de Citas -->
+    <div class="appointment-container">
+        <!-- Izquierda: Calendario -->
         <div class="calendar-container">
             <div class="calendar-header">
                 <h3><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Calendario de Citas</h3>
@@ -35,17 +35,18 @@ $additionalCSS = ['citas.css'];
             <div id="calendar"></div>
         </div>
 
-        <!-- Detalle del día seleccionado -->
-        <div id="dayDetail" class="appointments-list" style="display: none;">
-            <h3 id="dayDetailTitle">Citas del dia</h3>
-            <div id="dayDetailContent"></div>
-        </div>
+        <!-- Derecha: Detalle día + Lista de citas -->
+        <div class="citas-panel">
+            <!-- Detalle del día seleccionado -->
+            <div id="dayDetail" class="appointments-list" style="display: none;">
+                <h3 id="dayDetailTitle">Citas del día</h3>
+                <div id="dayDetailContent"></div>
+            </div>
 
-        <!-- Lista de citas programadas -->
-        <div class="appointments-list">
-            <h3>Mis Citas Programadas</h3>
-            <div id="appointmentsList">
-                <!-- Se llenará con JavaScript -->
+            <!-- Lista de citas programadas -->
+            <div class="appointments-list">
+                <h3>Mis Citas Programadas</h3>
+                <div id="appointmentsList"></div>
             </div>
         </div>
     </div>

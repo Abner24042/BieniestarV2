@@ -7,10 +7,15 @@ document.addEventListener('DOMContentLoaded', function() {
     initNewsFilters();
 });
 
-const NEWS_PAGE_SIZE = 4;
 let newsData      = [];
 let filteredNews  = [];
-let newsVisible   = NEWS_PAGE_SIZE;
+let newsVisible   = 3;
+
+function porFilaN() {
+    const el = document.getElementById('newsGrid');
+    const w  = el ? (el.clientWidth || el.offsetWidth) : (window.innerWidth - 260);
+    return Math.max(1, Math.floor((w + 16) / (320 + 16)));
+}
 
 async function loadNoticias() {
     try {
@@ -45,7 +50,7 @@ function applyNewsFilter() {
     const pool = newsData.slice(1);
     filteredNews = filter === 'all' ? pool : pool.filter(n => n.categoria === filter);
 
-    newsVisible = NEWS_PAGE_SIZE;
+    newsVisible = porFilaN();
     renderNoticiasPaginated();
 }
 
@@ -73,7 +78,7 @@ function renderNoticiasPaginated() {
 }
 
 function mostrarMasNoticias() {
-    newsVisible += NEWS_PAGE_SIZE;
+    newsVisible += porFilaN();
     renderNoticiasPaginated();
 }
 

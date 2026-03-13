@@ -38,9 +38,11 @@ function renderPlan(plan) {
 
     // Recetas
     const gR = document.getElementById('planRecetasGrid');
+    const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const hoy = dias[new Date().getDay()];
     gR.innerHTML = plan.recetas.length
         ? plan.recetas.map(r => recetaCard(r)).join('')
-        : '<p class="plan-loading">No tienes recetas asignadas aún.</p>';
+        : `<p class="plan-loading">No tienes recetas para ${hoy} aún.</p>`;
 
     // Recomendaciones
     const gRec = document.getElementById('planRecomendacionesGrid');

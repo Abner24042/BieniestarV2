@@ -37,10 +37,11 @@ $planModel = new Plan();
 $asignados = 0;
 
 foreach ($plan['recetas'] as $r) {
-    $dia = $dias[(int)$r['dia_semana']] ?? 'Día ' . $r['dia_semana'];
+    $diaSemana = (int)$r['dia_semana'];
+    $dia = $dias[$diaSemana] ?? 'Día ' . $diaSemana;
     $notas = 'Plan: ' . $plan['nombre'] . ' — ' . $dia . ' (' . ucfirst($r['tiempo_comida']) . ')';
     if (!empty($input['notas'])) $notas .= ' — ' . $input['notas'];
-    $planModel->asignarReceta($input['usuario_id'], $r['receta_id'], $user['correo'], $notas);
+    $planModel->asignarReceta($input['usuario_id'], $r['receta_id'], $user['correo'], $notas, $diaSemana);
     $asignados++;
 }
 

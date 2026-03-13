@@ -14,7 +14,7 @@ if (!$authController->isAuthenticated() || !isProfessional()) {
 try {
     $user = $authController->getCurrentUser();
     $model = new Receta();
-    $recetas = $model->getByCreator($user['correo']);
+    $recetas = $model->getByCreatorOrApproved($user['correo']);
     echo json_encode(['success' => true, 'recetas' => $recetas]);
 } catch (Exception $e) {
     error_log('Error en pro_get_recetas: ' . $e->getMessage());

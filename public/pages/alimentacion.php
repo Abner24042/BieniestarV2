@@ -27,9 +27,12 @@ $additionalCSS = ['filters.css', 'alimentacion.css'];
         <div class="filter-group">
             <button class="filter-btn active" data-category="all">Todas</button>
             <button class="filter-btn" data-category="desayuno">Desayuno</button>
+            <button class="filter-btn" data-category="almuerzo">Almuerzo</button>
             <button class="filter-btn" data-category="comida">Comida</button>
+            <button class="filter-btn" data-category="merienda">Merienda</button>
             <button class="filter-btn" data-category="cena">Cena</button>
             <button class="filter-btn" data-category="snack">Snacks</button>
+            <button class="filter-btn" data-category="postre">Postre</button>
         </div>
 
         <div class="search-box">

@@ -13,6 +13,6 @@ if (!$authController->isAuthenticated()) {
 
 $user = $authController->getCurrentUser();
 $model = new Plan();
-$plan  = $model->getMiPlan($user['id']);
+$plan  = $model->getMiPlan($user['id'], true);
 
 echo json_encode(['success' => true, 'plan' => $plan]);

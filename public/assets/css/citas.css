@@ -2,9 +2,15 @@
 
 .appointment-container {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    padding: 2rem;
+    grid-template-columns: 65fr 35fr;
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.citas-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
 /* Formulario de citas */
@@ -96,7 +102,7 @@
 /* Calendario */
 .calendar-container {
     background: white;
-    padding: 2rem;
+    padding: 1.25rem;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -105,8 +111,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
-    padding-bottom: 1rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.6rem;
     border-bottom: 2px solid #f0f0f0;
 }
 
@@ -146,24 +152,24 @@
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 0.5rem;
+    gap: 0.3rem;
 }
 
 .calendar-day-header {
     text-align: center;
     font-weight: 600;
     color: #666;
-    padding: 0.75rem 0;
-    font-size: 0.9rem;
+    padding: 0.4rem 0;
+    font-size: 0.8rem;
 }
 
 .calendar-day {
-    aspect-ratio: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 0.5rem;
+    padding: 0.25rem;
+    height: clamp(44px, 5.5vw, 72px);
     border-radius: 8px;
     border: 1px solid #f0f0f0;
     cursor: pointer;
@@ -218,54 +224,67 @@
 /* Lista de citas */
 .appointments-list {
     background: white;
-    padding: 2rem;
+    padding: 1.2rem;
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    margin-top: 2rem;
-    grid-column: 1 / -1;
+    margin-top: 0;
 }
 
 .appointments-list h3 {
-    margin: 0 0 1.5rem 0;
+    margin: 0 0 1rem 0;
     color: #333;
-    font-size: 1.5rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 0.6rem;
 }
 
 .appointment-item {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 1rem;
+    gap: 0.75rem;
+    padding: 0.75rem;
     background: #f9f9f9;
     border-radius: 8px;
-    margin-bottom: 1rem;
-    transition: all 0.3s;
+    margin-bottom: 0.6rem;
+    border-left: 3px solid #ff6b35;
+    transition: all 0.2s;
+}
+
+.appointment-item:last-child {
+    margin-bottom: 0;
 }
 
 .appointment-item:hover {
-    background: #f0f0f0;
-    transform: translateX(4px);
+    background: #fff3ee;
+    transform: translateX(3px);
 }
 
 .apt-icon {
-    font-size: 2rem;
+    font-size: 1.4rem;
     flex-shrink: 0;
 }
 
 .apt-details {
     flex: 1;
+    min-width: 0;
 }
 
 .apt-details h4 {
-    margin: 0 0 0.25rem 0;
+    margin: 0 0 0.15rem 0;
     color: #333;
+    font-size: 0.9rem;
+    font-weight: 600;
     text-transform: capitalize;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .apt-details p {
-    margin: 0.25rem 0;
+    margin: 0;
     color: #666;
-    font-size: 0.9rem;
+    font-size: 0.78rem;
 }
 
 .btn-cancel {
@@ -295,6 +314,17 @@
 @media (max-width: 968px) {
     .appointment-container {
         grid-template-columns: 1fr;
+    }
+
+    .citas-panel {
+        gap: 1rem;
+    }
+
+    .calendar-container {
+        max-width: 440px;
+        margin-left: auto;
+        margin-right: auto;
+        width: 100%;
     }
 
     .calendar-grid {

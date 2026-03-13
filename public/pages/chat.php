@@ -18,6 +18,10 @@ $esAdmin = isAdmin();
 include '../../app/views/layouts/header.php';
 ?>
 
+<style>
+.chat-container { height: calc(100vh - 280px) !important; min-height: 380px; }
+</style>
+
 <div class="content-wrapper">
     <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;">
         <div>
@@ -29,7 +33,7 @@ include '../../app/views/layouts/header.php';
         </button>
     </div>
 
-    <div class="chat-container" style="height:calc(100vh - 220px); min-height:420px;">
+    <div class="chat-container">
         <!-- Lista izquierda -->
         <div class="chat-sidebar">
             <div class="chat-sidebar-header">
@@ -51,6 +55,14 @@ include '../../app/views/layouts/header.php';
                 </div>
             </div>
             <div class="chat-input-area" id="chatInputArea" style="display:none;">
+                <button type="button" class="chat-attach-btn" onclick="chatTriggerArchivo()" title="Adjuntar archivo">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                    </svg>
+                </button>
+                <input type="file" id="chatFileInput" style="display:none;"
+                       accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.zip,.txt,.mp4,.mp3,.csv"
+                       onchange="chatEnviarArchivo(this)">
                 <textarea class="chat-input" id="chatInput"
                     placeholder="Escribe un mensaje… (Enter para enviar)" rows="1"></textarea>
                 <button class="chat-send-btn" onclick="chatEnviar()">

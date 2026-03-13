@@ -165,6 +165,61 @@ function chatIniciarDesdeModal() {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+   ADJUNTAR ARCHIVO
+───────────────────────────────────────────────────────────────────────── */
+
+function chatTriggerArchivo() {
+    const input = document.getElementById('chatFileInput');
+    if (input) input.click();
+}
+
+async function chatEnviarArchivo(input) {
+    const file = input?.files?.[0];
+    if (!file || !chatConvActiva) return;
+
+    const maxMB = 10;
+    if (file.size > maxMB * 1024 * 1024) {
+        chatShowToast(`El archivo excede el límite de ${maxMB} MB`, 'error');
+        input.value = '';
+        return;
+    }
+
+    const otroId = chatConvActiva.otroId;
+    if (!otroId) { chatShowToast('Selecciona una conversación primero', 'error'); input.value = ''; return; }
+
+    const formData = new FormData();
+    formData.append('archivo', file);
+    formData.append('destinatario_id', otroId);
+
+    // Show sending indicator
+    const btn = document.querySelector('.chat-attach-btn');
+    if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
+
+    try {
+        const res  = await fetch(API_URL + '/chat/subir-archivo', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (!data.success) {
+            chatShowToast(data.message || 'Error al enviar archivo', 'error');
+        } else {
+            if (chatConvActiva.pendingInit) {
+                chatConvActiva.id          = data.conversacion_id;
+                chatConvActiva.pendingInit = false;
+                chatLastMsgId = 0;
+                chatCargarConversaciones();
+                chatReiniciarPolling(3000, 'chatMessages');
+            }
+            await chatCargarMensajes('chatMessages', true);
+            if (chatEsPro) chatCargarConversaciones();
+        }
+    } catch (e) {
+        chatShowToast('Error de conexión', 'error');
+    } finally {
+        input.value = '';
+        if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
    ENVIAR (panel profesional)
 ───────────────────────────────────────────────────────────────────────── */
 
@@ -327,14 +382,29 @@ async function chatCargarMensajes(containerId, scroll = false) {
             wrap.className = 'chat-bubble ' + (isMine ? 'mine' : 'theirs');
             wrap.dataset.msgId = m.id;
 
-            const txt = document.createElement('div');
-            txt.textContent = m.contenido;
+            if (m.tipo === 'archivo') {
+                const nombre = m.archivo_nombre || 'Archivo';
+                const ext = nombre.split('.').pop().toLowerCase();
+                const iconMap = { pdf:'📄', doc:'📝', docx:'📝', xls:'📊', xlsx:'📊', ppt:'📑', pptx:'📑',
+                                  jpg:'🖼️', jpeg:'🖼️', png:'🖼️', gif:'🖼️', zip:'🗜️', mp4:'🎬', mp3:'🎵', txt:'📃', csv:'📊' };
+                const icon = iconMap[ext] || '📎';
+                const fileEl = document.createElement('a');
+                fileEl.className = 'chat-file-msg';
+                fileEl.href = m.archivo_url;
+                fileEl.target = '_blank';
+                fileEl.rel = 'noopener noreferrer';
+                fileEl.innerHTML = `<span class="chat-file-icon">${icon}</span><span class="chat-file-name">${chatEsc(nombre)}</span>`;
+                wrap.appendChild(fileEl);
+            } else {
+                const txt = document.createElement('div');
+                txt.textContent = m.contenido;
+                wrap.appendChild(txt);
+            }
 
             const time = document.createElement('div');
             time.className = 'chat-bubble-time';
             time.textContent = chatFormatTime(m.created_at);
 
-            wrap.appendChild(txt);
             wrap.appendChild(time);
 
             if (isMine) {

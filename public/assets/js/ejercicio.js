@@ -8,10 +8,15 @@ document.addEventListener('DOMContentLoaded', function() {
     initSearch();
 });
 
-const EXERCISE_PAGE_SIZE = 6;
 let exercisesData     = [];
 let filteredExercises = [];
-let exerciseVisible   = EXERCISE_PAGE_SIZE;
+let exerciseVisible   = 4;
+
+function porFilaEj() {
+    const el = document.getElementById('exercisesGrid');
+    const w  = el ? (el.clientWidth || el.offsetWidth) : (window.innerWidth - 260);
+    return Math.max(1, Math.floor((w + 16) / (320 + 16)));
+}
 
 async function loadEjercicios() {
     try {
@@ -45,7 +50,7 @@ function applyFilters() {
         return typeOk && termOk;
     });
 
-    exerciseVisible = EXERCISE_PAGE_SIZE;
+    exerciseVisible = porFilaEj();
     renderEjerciciosPaginated();
 }
 
@@ -73,7 +78,7 @@ function renderEjerciciosPaginated() {
 }
 
 function mostrarMasEjercicios() {
-    exerciseVisible += EXERCISE_PAGE_SIZE;
+    exerciseVisible += porFilaEj();
     renderEjerciciosPaginated();
 }
 

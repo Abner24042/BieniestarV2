@@ -47,6 +47,17 @@ class Receta {
         }
     }
 
+    public function getByCreatorOrApproved($email) {
+        try {
+            $query = "SELECT * FROM {$this->table} WHERE activo = 1 AND (creado_por = :email OR aprobada = 1) ORDER BY titulo ASC";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute([':email' => $email]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            return [];
+        }
+    }
+
     public function getByCreator($email) {
         try {
             $query = "SELECT * FROM {$this->table} WHERE creado_por = :email AND activo = 1 ORDER BY created_at DESC";

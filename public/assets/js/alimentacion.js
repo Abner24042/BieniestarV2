@@ -23,10 +23,15 @@ function setAutoFilterButton() {
     });
 }
 
-const RECIPE_PAGE_SIZE = 6;
 let recipesData      = [];
 let filteredRecipes  = [];
-let recipeVisible    = RECIPE_PAGE_SIZE;
+let recipeVisible    = 4;
+
+function porFilaR() {
+    const el = document.getElementById('recipesGrid');
+    const w  = el ? (el.clientWidth || el.offsetWidth) : (window.innerWidth - 260);
+    return Math.max(1, Math.floor((w + 16) / (320 + 16)));
+}
 
 async function loadRecetas() {
     try {
@@ -53,12 +58,20 @@ function applyRecipeFilter() {
     const term = (document.getElementById('searchRecipes')?.value || '').toLowerCase().trim();
 
     filteredRecipes = recipesData.filter(r => {
-        const catOk  = cat === 'all' || r.categoria === cat;
-        const termOk = !term || (r.titulo || '').toLowerCase().includes(term);
-        return catOk && termOk;
+        const catOk = cat === 'all' || (r.categoria || '').toLowerCase() === cat;
+        if (!term) return catOk;
+        const haystack = [
+            r.titulo,
+            r.categoria,
+            r.tipo_cocina,
+            r.fuente,
+            (() => { try { return JSON.parse(r.etiquetas_dieta || '[]').join(' '); } catch(e) { return ''; } })(),
+            (() => { try { return JSON.parse(r.etiquetas_salud || '[]').join(' '); } catch(e) { return ''; } })(),
+        ].map(v => (v || '').toLowerCase()).join(' ');
+        return catOk && haystack.includes(term);
     });
 
-    recipeVisible = RECIPE_PAGE_SIZE;
+    recipeVisible = porFilaR();
     renderRecetasPaginated();
 }
 
@@ -86,7 +99,7 @@ function renderRecetasPaginated() {
 }
 
 function mostrarMasRecetas() {
-    recipeVisible += RECIPE_PAGE_SIZE;
+    recipeVisible += porFilaR();
     renderRecetasPaginated();
 }
 
@@ -94,36 +107,24 @@ function renderRecetaCard(r) {
     const img = r.imagen || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80';
     const cat = capitalize(r.categoria || 'comida');
 
-    let dietBadges = '';
-    if (r.etiquetas_dieta) {
-        try {
-            const tags = JSON.parse(r.etiquetas_dieta).slice(0, 2);
-            dietBadges = tags.map(t => `<span style="display:inline-block;font-size:0.65rem;padding:2px 7px;border-radius:20px;background:#e8f5e9;color:#2e7d32;margin-right:3px;margin-top:4px;">${escapeHtml(t)}</span>`).join('');
-        } catch(e) {}
-    }
-
-    const tipoCocina = r.tipo_cocina ? `<span style="font-size:0.72rem;color:#888;">🍳 ${escapeHtml(r.tipo_cocina)}&nbsp;</span>` : '';
-
-    return `<div class="recipe-card" data-category="${escapeHtml(r.categoria)}">
+    return `<div class="recipe-card" data-category="${escapeHtml(r.categoria)}" onclick="showRecipeModal(${r.id})" style="cursor:pointer;">
         <div class="recipe-image">
-            <img src="${escapeHtml(img)}" alt="${escapeHtml(r.titulo)}" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80'">
-            <div class="recipe-badge">${escapeHtml(cat)}</div>
+            <img src="${escapeHtml(img)}" alt="${escapeHtml(r.titulo)}"
+                 onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80'">
+            <span class="recipe-badge">${escapeHtml(cat)}</span>
         </div>
         <div class="recipe-content">
             <h3>${escapeHtml(r.titulo)}</h3>
-            <div style="min-height:18px;margin-bottom:4px;">${tipoCocina}${dietBadges}</div>
             <div class="recipe-meta">
                 <div class="meta-item">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2"/></svg>
-                    <span>${r.tiempo_preparacion ? r.tiempo_preparacion + ' min' : '— min'}</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    ${r.tiempo_preparacion ? r.tiempo_preparacion + ' min' : '—'}
                 </div>
                 <div class="meta-item">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" stroke-width="2"/></svg>
-                    <span>${r.calorias ? Math.round(r.calorias) + ' kcal' : '— kcal'}</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Z"/></svg>
+                    ${r.porciones ? r.porciones + ' porciones' : '—'}
                 </div>
-                ${r.porciones ? `<div class="meta-item"><span>👤 ${r.porciones}</span></div>` : ''}
             </div>
-            <button class="btn btn-primary btn-block" onclick="showRecipeModal(${r.id})">Ver Receta</button>
         </div>
     </div>`;
 }
@@ -134,33 +135,6 @@ function showRecipeModal(id) {
 
     const img = r.imagen || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80';
 
-    const hasNutrition = r.proteinas || r.carbohidratos || r.grasas || r.fibra || r.calorias;
-    const nutritionTable = hasNutrition ? `
-        <div style="margin:1rem 0;">
-            <h3 style="margin-bottom:0.75rem;">Información Nutricional <small style="font-weight:400;color:#888;font-size:0.8rem;">(por porción)</small></h3>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(70px,1fr));gap:0.5rem;text-align:center;">
-                ${r.calorias ? `<div style="background:#fff3e0;border-radius:8px;padding:0.75rem 0.5rem;">
-                    <div style="font-size:1.1rem;font-weight:700;color:#e65100;">${Math.round(r.calorias)}</div>
-                    <div style="font-size:0.68rem;color:#666;">kcal</div>
-                </div>` : ''}
-                ${r.proteinas ? `<div style="background:#e8f5e9;border-radius:8px;padding:0.75rem 0.5rem;">
-                    <div style="font-size:1.1rem;font-weight:700;color:#2e7d32;">${r.proteinas}g</div>
-                    <div style="font-size:0.68rem;color:#666;">Proteínas</div>
-                </div>` : ''}
-                ${r.carbohidratos ? `<div style="background:#e3f2fd;border-radius:8px;padding:0.75rem 0.5rem;">
-                    <div style="font-size:1.1rem;font-weight:700;color:#1565c0;">${r.carbohidratos}g</div>
-                    <div style="font-size:0.68rem;color:#666;">Carbos</div>
-                </div>` : ''}
-                ${r.grasas ? `<div style="background:#fce4ec;border-radius:8px;padding:0.75rem 0.5rem;">
-                    <div style="font-size:1.1rem;font-weight:700;color:#880e4f;">${r.grasas}g</div>
-                    <div style="font-size:0.68rem;color:#666;">Grasas</div>
-                </div>` : ''}
-                ${r.fibra ? `<div style="background:#f3e5f5;border-radius:8px;padding:0.75rem 0.5rem;">
-                    <div style="font-size:1.1rem;font-weight:700;color:#6a1b9a;">${r.fibra}g</div>
-                    <div style="font-size:0.68rem;color:#666;">Fibra</div>
-                </div>` : ''}
-            </div>
-        </div>` : '';
 
     let healthBadges = '';
     if (r.etiquetas_salud) {
@@ -199,26 +173,41 @@ function showRecipeModal(id) {
            Ver receta completa →
         </a>` : '';
 
+    const hasNutBar = r.proteinas || r.carbohidratos || r.grasas || r.calorias || r.fibra;
+    const nutBar = hasNutBar ? `
+        <div class="recipe-modal-nutbar">
+            ${r.calorias    ? `<div class="nutbar-item nutbar-kcal"><span class="nutbar-val">${Math.round(r.calorias)}</span><span class="nutbar-lbl">kcal</span></div>` : ''}
+            ${r.proteinas   ? `<div class="nutbar-item nutbar-prot"><span class="nutbar-val">${r.proteinas}g</span><span class="nutbar-lbl">Proteínas</span></div>` : ''}
+            ${r.carbohidratos ? `<div class="nutbar-item nutbar-carbs"><span class="nutbar-val">${r.carbohidratos}g</span><span class="nutbar-lbl">Carbos</span></div>` : ''}
+            ${r.grasas       ? `<div class="nutbar-item nutbar-fat"><span class="nutbar-val">${r.grasas}g</span><span class="nutbar-lbl">Grasas</span></div>` : ''}
+            ${r.fibra        ? `<div class="nutbar-item nutbar-fiber"><span class="nutbar-val">${r.fibra}g</span><span class="nutbar-lbl">Fibra</span></div>` : ''}
+        </div>` : '';
+
     document.getElementById('recipeModalTitle').textContent = r.titulo;
     document.getElementById('recipeModalBody').innerHTML = `
         <div class="recipe-modal-content">
-            <div class="recipe-modal-image">
-                <img src="${escapeHtml(img)}" alt="${escapeHtml(r.titulo)}" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80'">
-            </div>
-            <div class="recipe-modal-info">
-                ${fuenteInfo}
-                ${dietBadges}
-                <div class="recipe-stats">
+            <!-- Fila superior: imagen izquierda + stats derecha -->
+            <div class="recipe-modal-top">
+                <div class="recipe-modal-image">
+                    <img src="${escapeHtml(img)}" alt="${escapeHtml(r.titulo)}" onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80'">
+                </div>
+                <div class="recipe-modal-side">
+                    ${fuenteInfo}
+                    ${dietBadges}
                     <div class="stat-box">
-                        <span class="stat-label">Tiempo</span>
+                        <span class="stat-label">⏱ Tiempo</span>
                         <span class="stat-value">${r.tiempo_preparacion ? r.tiempo_preparacion + ' min' : '—'}</span>
                     </div>
                     <div class="stat-box">
-                        <span class="stat-label">Porciones</span>
+                        <span class="stat-label">🍽 Porciones</span>
                         <span class="stat-value">${r.porciones || 1}</span>
                     </div>
                 </div>
-                ${nutritionTable}
+            </div>
+            <!-- Barra nutricional full-width -->
+            ${nutBar}
+            <!-- Detalle scrollable -->
+            <div class="recipe-modal-detail">
                 ${healthBadges}
                 <h3>Ingredientes:</h3>
                 <ul class="ingredients-list">${formatList(r.ingredientes)}</ul>
