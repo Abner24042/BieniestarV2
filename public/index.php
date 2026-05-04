@@ -43,8 +43,12 @@ $router->get('/admin/citas', PUBLIC_PATH . '/pages/admin/citas.php');
 $router->get('/admin/recetas', PUBLIC_PATH . '/pages/admin/recetas.php');
 $router->get('/admin/ejercicios', PUBLIC_PATH . '/pages/admin/ejercicios.php');
 $router->get('/admin/noticias', PUBLIC_PATH . '/pages/admin/noticias.php');
-$router->get('/admin/configuracion', PUBLIC_PATH . '/pages/admin/configuracion.php');
-$router->get('/admin/logs', PUBLIC_PATH . '/pages/admin/logs.php');
+$router->get('/admin/configuracion',      PUBLIC_PATH . '/pages/admin/configuracion.php');
+$router->get('/admin/logs',               PUBLIC_PATH . '/pages/admin/logs.php');
+$router->get('/admin/solicitudes',        PUBLIC_PATH . '/pages/admin/solicitudes.php');
+$router->get('/admin/recomendaciones',    PUBLIC_PATH . '/pages/admin/recomendaciones.php');
+$router->get('/admin/planes-alimentacion',PUBLIC_PATH . '/pages/admin/planes-alimentacion.php');
+$router->get('/admin/planes-ejercicio',   PUBLIC_PATH . '/pages/admin/planes-ejercicio.php');
 
 
 // PÁGINA PROFESIONAL
@@ -126,7 +130,20 @@ $router->post('/api/admin/users/save',      $adminCtrl);
 $router->get('/api/admin/noticias',         $adminCtrl);
 $router->post('/api/admin/noticias/save',   $adminCtrl);
 $router->post('/api/admin/noticias/delete', $adminCtrl);
-$router->get('/api/admin/export',           $adminCtrl);
+$router->get('/api/admin/export',                 $adminCtrl);
+$router->get('/api/admin/solicitudes',                  $adminCtrl);
+$router->post('/api/admin/solicitudes/accion',          $adminCtrl);
+$router->post('/api/admin/solicitudes/update',          $adminCtrl);
+$router->post('/api/admin/solicitudes/delete',          $adminCtrl);
+$router->get('/api/admin/recomendaciones',              $adminCtrl);
+$router->post('/api/admin/recomendaciones/update',      $adminCtrl);
+$router->post('/api/admin/recomendaciones/delete',      $adminCtrl);
+$router->get('/api/admin/planes-alimentacion',          $adminCtrl);
+$router->post('/api/admin/planes-alimentacion/update',  $adminCtrl);
+$router->post('/api/admin/planes-alimentacion/delete',  $adminCtrl);
+$router->get('/api/admin/planes-ejercicio',             $adminCtrl);
+$router->post('/api/admin/planes-ejercicio/update',     $adminCtrl);
+$router->post('/api/admin/planes-ejercicio/delete',     $adminCtrl);
 
 
 $router->get('/api/pro/historial-usuario',              $proCtrl);

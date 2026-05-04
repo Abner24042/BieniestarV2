@@ -8,6 +8,7 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../models/Cita.php';
 require_once __DIR__ . '/../models/Noticia.php';
+require_once __DIR__ . '/../models/Plan.php';
 require_once __DIR__ . '/../helpers/file_helper.php';
 require_once __DIR__ . '/AuthController.php';
 
@@ -22,16 +23,29 @@ $segment = preg_replace('#^.*/api/admin/?#', '', $uri);  // "users/save", "notic
 $segment = trim($segment, '/');
 
 $ADMIN_ACTION = match(true) {
-    $method === 'GET'  && $segment === 'stats'          => 'stats',
-    $method === 'GET'  && $segment === 'appointments'   => 'appointments',
-    $method === 'POST' && $segment === 'appointments/delete' => 'appointments_delete',
-    $method === 'GET'  && $segment === 'users'          => 'users',
-    $method === 'POST' && $segment === 'users/save'     => 'users_save',
-    $method === 'GET'  && $segment === 'noticias'       => 'noticias',
-    $method === 'POST' && $segment === 'noticias/save'  => 'noticias_save',
-    $method === 'POST' && $segment === 'noticias/delete'=> 'noticias_delete',
-    $method === 'GET'  && $segment === 'export'         => 'export',
-    default                                             => 'unknown',
+    $method === 'GET'  && $segment === 'stats'                    => 'stats',
+    $method === 'GET'  && $segment === 'appointments'             => 'appointments',
+    $method === 'POST' && $segment === 'appointments/delete'      => 'appointments_delete',
+    $method === 'GET'  && $segment === 'users'                    => 'users',
+    $method === 'POST' && $segment === 'users/save'               => 'users_save',
+    $method === 'GET'  && $segment === 'noticias'                 => 'noticias',
+    $method === 'POST' && $segment === 'noticias/save'            => 'noticias_save',
+    $method === 'POST' && $segment === 'noticias/delete'          => 'noticias_delete',
+    $method === 'GET'  && $segment === 'solicitudes'              => 'solicitudes',
+    $method === 'POST' && $segment === 'solicitudes/accion'           => 'solicitudes_accion',
+    $method === 'POST' && $segment === 'solicitudes/update'           => 'solicitudes_update',
+    $method === 'POST' && $segment === 'solicitudes/delete'           => 'solicitudes_delete',
+    $method === 'GET'  && $segment === 'recomendaciones'              => 'recomendaciones',
+    $method === 'POST' && $segment === 'recomendaciones/update'       => 'recomendaciones_update',
+    $method === 'POST' && $segment === 'recomendaciones/delete'       => 'recomendaciones_delete',
+    $method === 'GET'  && $segment === 'planes-alimentacion'          => 'planes_alimentacion',
+    $method === 'POST' && $segment === 'planes-alimentacion/update'   => 'planes_alimentacion_update',
+    $method === 'POST' && $segment === 'planes-alimentacion/delete'   => 'planes_alimentacion_delete',
+    $method === 'GET'  && $segment === 'planes-ejercicio'             => 'planes_ejercicio',
+    $method === 'POST' && $segment === 'planes-ejercicio/update'      => 'planes_ejercicio_update',
+    $method === 'POST' && $segment === 'planes-ejercicio/delete'      => 'planes_ejercicio_delete',
+    $method === 'GET'  && $segment === 'export'                   => 'export',
+    default                                                       => 'unknown',
 };
 
 // ── Export devuelve CSV, el resto JSON ──────────────────────────
@@ -194,6 +208,204 @@ try {
                 $model->delete($data['id']);
                 echo json_encode(['success' => true, 'message' => 'Noticia eliminada']);
             }
+            break;
+        }
+
+        // ── GET solicitudes ─────────────────────────────────────────
+        case 'solicitudes': {
+            $db   = (new Database())->getConnection();
+            $stmt = $db->query(
+                "SELECT c.*, u.nombre AS usuario_nombre
+                 FROM citas_bieniestar c
+                 LEFT JOIN usuarios u ON u.correo = c.correo
+                 WHERE c.es_solicitud = 1
+                 ORDER BY c.fecha DESC, c.id DESC"
+            );
+            echo json_encode(['success' => true, 'solicitudes' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+            break;
+        }
+
+        // ── POST solicitudes/update ──────────────────────────────────
+        case 'solicitudes_update': {
+            $body   = json_decode(file_get_contents('php://input'), true);
+            $id     = (int)($body['id']     ?? 0);
+            $estado = $body['estado'] ?? '';
+            $motivo = trim($body['motivo']  ?? '');
+            $allowed = ['pendiente', 'aceptada', 'denegada'];
+            if (!$id || !in_array($estado, $allowed)) {
+                echo json_encode(['success' => false, 'message' => 'Datos inválidos']); break;
+            }
+            $db   = (new Database())->getConnection();
+            $stmt = $db->prepare("UPDATE citas_bieniestar SET sol_estado = :estado, sol_motivo = :motivo WHERE id = :id AND es_solicitud = 1");
+            $stmt->execute([':estado' => $estado, ':motivo' => $motivo, ':id' => $id]);
+            echo json_encode(['success' => true, 'message' => 'Solicitud actualizada']);
+            break;
+        }
+
+        // ── POST solicitudes/delete ───────────────────────────────────
+        case 'solicitudes_delete': {
+            $body = json_decode(file_get_contents('php://input'), true);
+            $id   = (int)($body['id'] ?? 0);
+            if (!$id) { echo json_encode(['success' => false, 'message' => 'ID requerido']); break; }
+            $db   = (new Database())->getConnection();
+            $db->prepare("DELETE FROM citas_bieniestar WHERE id = :id AND es_solicitud = 1")->execute([':id' => $id]);
+            echo json_encode(['success' => true, 'message' => 'Solicitud eliminada']);
+            break;
+        }
+
+        // ── POST solicitudes/accion ──────────────────────────────────
+        case 'solicitudes_accion': {
+            $body   = json_decode(file_get_contents('php://input'), true);
+            $id     = (int)($body['id']    ?? 0);
+            $accion = $body['accion'] ?? '';
+            if (!$id || !in_array($accion, ['aceptar', 'denegar'])) {
+                echo json_encode(['success' => false, 'message' => 'Datos inválidos']); break;
+            }
+            $estado = $accion === 'aceptar' ? 'aceptada' : 'denegada';
+            $db     = (new Database())->getConnection();
+            $stmt   = $db->prepare("UPDATE citas_bieniestar SET sol_estado = :estado WHERE id = :id AND es_solicitud = 1");
+            $stmt->execute([':estado' => $estado, ':id' => $id]);
+            $msg = $accion === 'aceptar' ? 'Solicitud aceptada' : 'Solicitud denegada';
+            echo json_encode(['success' => true, 'message' => $msg]);
+            break;
+        }
+
+        // ── GET recomendaciones ──────────────────────────────────────
+        case 'recomendaciones': {
+            new Plan(); // ensure tables exist
+            $db   = (new Database())->getConnection();
+            $stmt = $db->query(
+                "SELECT r.*,
+                        u.nombre  AS usuario_nombre,
+                        u.correo  AS usuario_correo,
+                        p.nombre  AS profesional_nombre,
+                        p.correo  AS profesional_correo
+                 FROM recomendaciones r
+                 LEFT JOIN usuarios u ON u.id = r.usuario_id
+                 LEFT JOIN usuarios p ON p.correo = r.profesional_id
+                 ORDER BY r.created_at DESC"
+            );
+            echo json_encode(['success' => true, 'recomendaciones' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+            break;
+        }
+
+        // ── POST recomendaciones/update ──────────────────────────────
+        case 'recomendaciones_update': {
+            $body     = json_decode(file_get_contents('php://input'), true);
+            $id       = (int)($body['id']       ?? 0);
+            $titulo   = trim($body['titulo']    ?? '');
+            $contenido = trim($body['contenido'] ?? '');
+            $tipo     = $body['tipo']   ?? 'general';
+            $activo   = isset($body['activo']) ? (int)$body['activo'] : 1;
+            $tipos    = ['general','alimentacion','ejercicio','salud-mental'];
+            if (!$id || !$titulo || !in_array($tipo, $tipos)) {
+                echo json_encode(['success' => false, 'message' => 'Datos inválidos']); break;
+            }
+            new Plan();
+            $db   = (new Database())->getConnection();
+            $stmt = $db->prepare("UPDATE recomendaciones SET titulo = :titulo, contenido = :contenido, tipo = :tipo, activo = :activo WHERE id = :id");
+            $stmt->execute([':titulo' => $titulo, ':contenido' => $contenido, ':tipo' => $tipo, ':activo' => $activo, ':id' => $id]);
+            echo json_encode(['success' => true, 'message' => 'Recomendación actualizada']);
+            break;
+        }
+
+        // ── POST recomendaciones/delete ──────────────────────────────
+        case 'recomendaciones_delete': {
+            $body = json_decode(file_get_contents('php://input'), true);
+            $id   = (int)($body['id'] ?? 0);
+            if (!$id) { echo json_encode(['success' => false, 'message' => 'ID requerido']); break; }
+            $db   = (new Database())->getConnection();
+            $db->prepare("DELETE FROM recomendaciones WHERE id = :id")->execute([':id' => $id]);
+            echo json_encode(['success' => true, 'message' => 'Recomendación eliminada']);
+            break;
+        }
+
+        // ── GET planes-alimentacion ──────────────────────────────────
+        case 'planes_alimentacion': {
+            new Plan(); // ensure tables exist
+            $db   = (new Database())->getConnection();
+            $stmt = $db->query(
+                "SELECT pr.*,
+                        u.nombre  AS usuario_nombre,
+                        u.correo  AS usuario_correo,
+                        r.titulo  AS receta_titulo
+                 FROM plan_recetas pr
+                 LEFT JOIN usuarios u ON u.id  = pr.usuario_id
+                 LEFT JOIN recetas  r ON r.id  = pr.receta_id
+                 ORDER BY pr.fecha_asignacion DESC"
+            );
+            echo json_encode(['success' => true, 'planes' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+            break;
+        }
+
+        // ── POST planes-alimentacion/update ─────────────────────────
+        case 'planes_alimentacion_update': {
+            $body      = json_decode(file_get_contents('php://input'), true);
+            $id        = (int)($body['id']        ?? 0);
+            $dia       = (int)($body['dia_semana'] ?? 0);
+            $notas     = trim($body['notas']       ?? '');
+            if (!$id) { echo json_encode(['success' => false, 'message' => 'ID requerido']); break; }
+            new Plan();
+            $db   = (new Database())->getConnection();
+            $stmt = $db->prepare("UPDATE plan_recetas SET dia_semana = :dia, notas = :notas WHERE id = :id");
+            $stmt->execute([':dia' => $dia, ':notas' => $notas, ':id' => $id]);
+            echo json_encode(['success' => true, 'message' => 'Asignación actualizada']);
+            break;
+        }
+
+        // ── POST planes-alimentacion/delete ──────────────────────────
+        case 'planes_alimentacion_delete': {
+            $body = json_decode(file_get_contents('php://input'), true);
+            $id   = (int)($body['id'] ?? 0);
+            if (!$id) { echo json_encode(['success' => false, 'message' => 'ID requerido']); break; }
+            new Plan();
+            $db   = (new Database())->getConnection();
+            $db->prepare("DELETE FROM plan_recetas WHERE id = :id")->execute([':id' => $id]);
+            echo json_encode(['success' => true, 'message' => 'Asignación eliminada']);
+            break;
+        }
+
+        // ── GET planes-ejercicio ─────────────────────────────────────
+        case 'planes_ejercicio': {
+            new Plan(); // ensure tables exist
+            $db   = (new Database())->getConnection();
+            $stmt = $db->query(
+                "SELECT pe.*,
+                        u.nombre  AS usuario_nombre,
+                        u.correo  AS usuario_correo,
+                        e.titulo  AS ejercicio_titulo
+                 FROM plan_ejercicios pe
+                 LEFT JOIN usuarios   u ON u.id = pe.usuario_id
+                 LEFT JOIN ejercicios e ON e.id = pe.ejercicio_id
+                 ORDER BY pe.fecha_asignacion DESC"
+            );
+            echo json_encode(['success' => true, 'planes' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+            break;
+        }
+
+        // ── POST planes-ejercicio/update ─────────────────────────────
+        case 'planes_ejercicio_update': {
+            $body  = json_decode(file_get_contents('php://input'), true);
+            $id    = (int)($body['id']    ?? 0);
+            $notas = trim($body['notas']  ?? '');
+            if (!$id) { echo json_encode(['success' => false, 'message' => 'ID requerido']); break; }
+            new Plan();
+            $db   = (new Database())->getConnection();
+            $stmt = $db->prepare("UPDATE plan_ejercicios SET notas = :notas WHERE id = :id");
+            $stmt->execute([':notas' => $notas, ':id' => $id]);
+            echo json_encode(['success' => true, 'message' => 'Asignación actualizada']);
+            break;
+        }
+
+        // ── POST planes-ejercicio/delete ──────────────────────────────
+        case 'planes_ejercicio_delete': {
+            $body = json_decode(file_get_contents('php://input'), true);
+            $id   = (int)($body['id'] ?? 0);
+            if (!$id) { echo json_encode(['success' => false, 'message' => 'ID requerido']); break; }
+            new Plan();
+            $db   = (new Database())->getConnection();
+            $db->prepare("DELETE FROM plan_ejercicios WHERE id = :id")->execute([':id' => $id]);
+            echo json_encode(['success' => true, 'message' => 'Asignación eliminada']);
             break;
         }
 

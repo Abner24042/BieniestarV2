@@ -94,19 +94,35 @@ $additionalCSS = ['admin.css'];
             </div>
 
             <div class="admin-section">
-                <h2>🍽️ Gestión de Recetas</h2>
-                <p>Administrar recetas y contenido de alimentación</p>
+                <h2>⏳ Solicitudes</h2>
+                <p>Revisar y gestionar solicitudes de cita enviadas por usuarios</p>
                 <div class="section-actions">
-                    <a href="<?php echo url('admin/recetas'); ?>" class="btn btn-primary">Gestionar Recetas</a>
+                    <a href="<?php echo url('admin/solicitudes'); ?>" class="btn btn-primary">Ver Solicitudes</a>
+                </div>
+            </div>
+
+            <div class="admin-section">
+                <h2>💡 Recomendaciones</h2>
+                <p>Ver todas las recomendaciones emitidas por los especialistas</p>
+                <div class="section-actions">
+                    <a href="<?php echo url('admin/recomendaciones'); ?>" class="btn btn-primary">Ver Recomendaciones</a>
+                </div>
+            </div>
+
+            <div class="admin-section">
+                <h2>🍽️ Planes de Alimentación</h2>
+                <p>Recetas asignadas a usuarios por los nutriólogos</p>
+                <div class="section-actions">
+                    <a href="<?php echo url('admin/planes-alimentacion'); ?>" class="btn btn-primary">Ver Planes</a>
                     <button class="btn btn-secondary" onclick="descargarCSV('recetas')" style="background:#2d6a4f;">⬇️ Exportar</button>
                 </div>
             </div>
 
             <div class="admin-section">
-                <h2>💪 Gestión de Ejercicios</h2>
-                <p>Administrar rutinas y ejercicios del sistema</p>
+                <h2>💪 Planes de Ejercicio</h2>
+                <p>Rutinas asignadas a usuarios por los coaches</p>
                 <div class="section-actions">
-                    <a href="<?php echo url('admin/ejercicios'); ?>" class="btn btn-primary">Gestionar Ejercicios</a>
+                    <a href="<?php echo url('admin/planes-ejercicio'); ?>" class="btn btn-primary">Ver Planes</a>
                     <button class="btn btn-secondary" onclick="descargarCSV('ejercicios')" style="background:#2d6a4f;">⬇️ Exportar</button>
                 </div>
             </div>
